@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:live_location/ActiveVehiclesScreen.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:live_location/home.dart';
 import 'signup.dart';
@@ -118,7 +119,7 @@ class _LoginState extends State<Login> {
                         // int login_success = 1;
                         int login_success = await login(email.text,pass.text);
                         if(login_success == 1){
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => ActiveVehiclesScreen()));
                         }
                         else if(login_success == -1){
                           showDialog(
