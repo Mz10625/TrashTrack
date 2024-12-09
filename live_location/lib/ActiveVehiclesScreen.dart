@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:live_location/firebase_operations.dart';
+import 'package:live_location/login.dart';
 
 class ActiveVehiclesScreen extends StatefulWidget {
   const ActiveVehiclesScreen({super.key});
@@ -9,7 +12,7 @@ class ActiveVehiclesScreen extends StatefulWidget {
 }
 
 class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final user = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -21,24 +24,30 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
         child: Column(
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text('John Doe'),
-              accountEmail: Text('johndoe@example.com'),
-              currentAccountPicture: CircleAvatar(
+              accountName: Text(''),
+              accountEmail: Text(user?.email ?? ''),
+              currentAccountPicture: const CircleAvatar(
                 child: Icon(Icons.person),
               ),
+              decoration: const BoxDecoration(color: Colors.black54),
             ),
             ListTile(
               leading: Icon(Icons.update),
               title: Text('Update Profile'),
               onTap: () {
-                // Navigate to update profile screen
+
               },
             ),
             ListTile(
               leading: Icon(Icons.logout),
               title: Text('Logout'),
-              onTap: () {
-                // Implement logout functionality
+              onTap: () async{
+                try {
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()),);
+                } catch (e) {
+                  print("Error signing out: $e");
+                }
               },
             ),
           ],
@@ -50,67 +59,105 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-                padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+                padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
                 child: Text(
-                  'Active Vehicles',
+                  'Vehicles',
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
               child: Text(
-                'View real time location',
+                'View real time location of vehicles in your ward',
                 style: TextStyle(fontSize: 15, color: Color.fromRGBO(99, 111, 129, 1), fontWeight: FontWeight.w500),
-                // style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
-            SizedBox(height: 16.0),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _firestore.collection('vehicles').snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
+            SizedBox(height: 20.0),
+            Column(
+              children: [
+                FutureBuilder<Map<String, dynamic>>(
+                  future: fetchCombinedData(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return Center(child: CircularProgressIndicator());
+                    }
 
-                  final vehicles = snapshot.data!.docs;
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
+                    final combinedData = snapshot.data!;
+                    final vehicles = combinedData['vehicles'] as List<Map<String, dynamic>>;
+                    final wardsMap = combinedData['wards'] as Map<String, dynamic>;
 
-                      columns: [
-                        DataColumn(label: Text('Vehicle No.')),
-                        DataColumn(label: Text('Ward No.')),
-                        DataColumn(label: Text('Status')),
-                      ],
-                      rows: vehicles.map((vehicle) {
-                        final data = vehicle.data() as Map<String, dynamic>;
-                        return DataRow(
-                          cells: [
-                            DataCell(Text('${data['vehicle_no']}')),
-                            DataCell(Text('${data['ward_no']}')),
-                            DataCell(Text('${data['status']}')),
-                          ],
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.vertical, // Enables vertical scrolling
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal, // Enables horizontal scrolling
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth: constraints.maxWidth, // Ensures the table stretches to screen width
+                              ),
+                              child: DataTable(
+                                columnSpacing: 20,
+                                headingRowColor: const WidgetStatePropertyAll(Color.fromRGBO(77, 176, 234, 0.45)),
+                                columns: const [
+                                  DataColumn(label: Text('Vehicle No.')),
+                                  DataColumn(label: Text('Ward No.')),
+                                  DataColumn(label: Text('Ward Name')),
+                                  DataColumn(label: Text('Status')),
+                                ],
+                                rows: vehicles.asMap().entries.map((entry) {
+                                  int index = entry.key;
+                                  var vehicle = entry.value;
+
+                                  final wardName = wardsMap[vehicle['ward_no'].toString()] ?? 'Unknown';
+                                  return DataRow(
+                                    color: WidgetStatePropertyAll(
+                                      index % 2 == 0
+                                          ? const Color.fromRGBO(255, 255, 255, 1)
+                                          : const Color.fromRGBO(240, 245, 249, 1),
+                                    ),
+                                    cells: [
+                                      DataCell(Text('${vehicle['vehicle_no']}')),
+                                      DataCell(Text('${vehicle['ward_no']}')),
+                                      DataCell(Text(wardName)),
+                                      DataCell(Text('${vehicle['status']}')),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
                         );
-                      }).toList(),
-                    ),
-                  );
-                },
-              ),
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
-            SizedBox(height: 16.0),
+
+            const SizedBox(height: 50.0),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    // Navigate to view location screen
+                    // Add your onPressed functionality here
                   },
-                  child: Text('View Location'),
-                ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    elevation: 5,
+                    // shadowColor: Colors.indigo
+                  ),
+                  child: const Text(
+                    'View Location',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white), // Text styling
+                  ),
+                )
+
               ],
             )
           ],

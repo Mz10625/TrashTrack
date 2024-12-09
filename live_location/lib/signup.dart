@@ -2,10 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:live_location/firebase_operations.dart';
-
 import 'login.dart';
 
-class SignUp extends StatefulWidget{
+class SignUp extends StatefulWidget {
   const SignUp({super.key});
 
   @override
@@ -16,11 +15,34 @@ class _SignUpState extends State<SignUp> {
   bool _passwordVisible = false;
   TextEditingController pass = TextEditingController();
   TextEditingController email = TextEditingController();
-  TextEditingController ward = TextEditingController();
+  String? selectedWard;
+
+  List<Map<String, dynamic>> wards = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchWards();
+  }
+
+  Future<void> _fetchWards() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('wards').get();
+
+      setState(() {
+        wards = snapshot.docs.map((doc) {
+          return Map<String, dynamic>.from(doc.data() as Map);
+        }).toList();
+        print(wards);
+      });
+    } catch (e) {
+      print("Error fetching ward data: $e");
+    }
+  }
 
   void _signUp() async {
     try {
-      final String wardNumber = ward.text.trim();
+      final String wardNumber = selectedWard ?? '';
       final String userEmail = email.text.trim();
       final String userPassword = pass.text.trim();
 
@@ -32,7 +54,7 @@ class _SignUpState extends State<SignUp> {
       }
 
       String status = await signUp(userEmail, userPassword, wardNumber);
-      if(status == "1"){
+      if (status == "1") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Account created successfully!')),
         );
@@ -41,8 +63,7 @@ class _SignUpState extends State<SignUp> {
           context,
           MaterialPageRoute(builder: (context) => Login()),
         );
-      }
-      else{
+      } else {
         showDialog(
           context: context,
           builder: (context) {
@@ -54,8 +75,7 @@ class _SignUpState extends State<SignUp> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: Text("Ok")
-                ),
+                    child: Text("Ok")),
               ],
             );
           },
@@ -65,7 +85,6 @@ class _SignUpState extends State<SignUp> {
       print(e);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -77,10 +96,10 @@ class _SignUpState extends State<SignUp> {
             left: 0,
             right: 0,
             child: Container(
-              height: MediaQuery.of(context).size.height * 0.4, // Adjust height for the image
+              height: MediaQuery.of(context).size.height * 0.4,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/images/kitchen.jpg'), // Path to the background image
+                  image: AssetImage('assets/images/kitchen.jpg'),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -115,46 +134,7 @@ class _SignUpState extends State<SignUp> {
                       ),
                     ),
                     SizedBox(height: 20),
-                    // TextField(
-                    //   decoration: InputDecoration(
-                    //     labelText: 'Name',
-                    //     border: OutlineInputBorder(
-                    //       borderRadius: BorderRadius.circular(10),
-                    //     ),
-                    //   ),
-                    //   controller: name,
-                    // ),
-                    // SizedBox(height: 15),
-                    // TextField(
-                    //   decoration: InputDecoration(
-                    //     labelText: 'Mobile Number',
-                    //     border: OutlineInputBorder(
-                    //       borderRadius: BorderRadius.circular(10),
-                    //     ),
-                    //   ),
-                    //   keyboardType: TextInputType.phone,
-                    // ),
-                    // SizedBox(height: 15),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Ward Number',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      keyboardType: TextInputType.number,
-                      controller: ward,
-                    ),
-                    SizedBox(height: 15),
-                    // TextField(
-                    //   decoration: InputDecoration(
-                    //     labelText: 'Address',
-                    //     border: OutlineInputBorder(
-                    //       borderRadius: BorderRadius.circular(10),
-                    //     ),
-                    //   ),
-                    // ),
-                    // SizedBox(height: 15),
+                    // Email Field
                     TextField(
                       decoration: InputDecoration(
                         labelText: 'Email Address',
@@ -166,6 +146,31 @@ class _SignUpState extends State<SignUp> {
                       controller: email,
                     ),
                     SizedBox(height: 15),
+                    DropdownButtonFormField<String>(
+                      value: selectedWard,
+                      hint: Text('Select Ward'),
+                      decoration: InputDecoration(
+                        labelText: 'Ward Number',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      items: wards.map((ward) {
+                        return DropdownMenuItem<String>(
+                          value: ward['number'].toString(),
+                          child: Text(
+                            '${ward['number']} - ${ward['name']}',
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedWard = newValue;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 15),
+                    // Password Field
                     TextField(
                       obscureText: !_passwordVisible,
                       decoration: InputDecoration(
@@ -173,18 +178,21 @@ class _SignUpState extends State<SignUp> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        suffixIcon: IconButton(onPressed: ()=>{
-                          setState((){
-                            _passwordVisible = !_passwordVisible;
-                            // password = pass.text;
-                          }),
-                        },
-                            icon: _passwordVisible ? Icon(Icons.visibility_rounded) : Icon(Icons.visibility_off)
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                          icon: !_passwordVisible
+                              ? Icon(Icons.visibility_rounded)
+                              : Icon(Icons.visibility_off),
                         ),
                       ),
                       controller: pass,
                     ),
                     SizedBox(height: 20),
+                    // Sign Up Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
@@ -200,6 +208,7 @@ class _SignUpState extends State<SignUp> {
                       ),
                     ),
                     SizedBox(height: 10),
+                    // Login Redirect
                     Center(
                       child: TextButton(
                         onPressed: () {

@@ -76,7 +76,7 @@ class _LoginState extends State<Login> {
                   ),
                   SizedBox(height: 20),
                   TextField(
-                    obscureText: _passwordVisible,
+                    obscureText: !_passwordVisible,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       border: OutlineInputBorder(
