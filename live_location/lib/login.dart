@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:live_location/ActiveVehiclesScreen.dart';
 import 'package:live_location/firebase_operations.dart';
-import 'package:live_location/home.dart';
 import 'signup.dart';
 
 class Login extends StatefulWidget{
@@ -31,7 +30,7 @@ class _LoginState extends State<Login> {
               height: MediaQuery.of(context).size.height * 0.58,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/images/login1.png'),
+                  image: AssetImage('assets/images/logo.png'),
                   fit: BoxFit.contain,
                 ),
               ),
@@ -106,86 +105,94 @@ class _LoginState extends State<Login> {
                       ),
                     ),
                   ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: ()async {
-                      if(pass.text != "" && email.text != ""){
-                        // int login_success = 1;
-                        int login_success = await login(email.text,pass.text);
-                        if(login_success == 1){
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => ActiveVehiclesScreen()));
-                        }
-                        else if(login_success == -1){
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: Text("Network Error"),
-                                content: Text("Please check your Internet connectivity and try again"),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: Text("Ok")
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        }
-                        else{
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: Text("Login Failed"),
-                                content: Text("Incorrect Email or Password"),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: Text("Ok")
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        }
-                      }
-                      else{
-                        showDialog(
-                          context: context,
-                          builder: (context){
-                            return AlertDialog(
-                              title: Text("Missing Fileds"),
-                              content: Text(
-                                  "Please Enter Username and Password"
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: (){
-                                    Navigator.pop(context) ;
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: MediaQuery.of(context).size.width/3,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(104 ,150 ,196,1),
+                            minimumSize: Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: ()async {
+                            if(pass.text != "" && email.text != ""){
+                              // int login_success = 1;
+                              int login_success = await login(email.text,pass.text);
+                              if(login_success == 1){
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => ActiveVehiclesScreen()));
+                              }
+                              else if(login_success == -1){
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: Text("Network Error"),
+                                      content: Text("Please check your Internet connectivity and try again"),
+                                      actions: [
+                                        TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text("Ok")
+                                        ),
+                                      ],
+                                    );
                                   },
-                                  child: Text("Ok",style: TextStyle(color: Colors.black54),),
-                                )
-                              ],
-                            );
+                                );
+                              }
+                              else{
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: Text("Login Failed"),
+                                      content: Text("Incorrect Email or Password"),
+                                      actions: [
+                                        TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text("Ok")
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              }
+                            }
+                            else{
+                              showDialog(
+                                context: context,
+                                builder: (context){
+                                  return AlertDialog(
+                                    title: Text("Missing Fileds"),
+                                    content: Text(
+                                        "Please Enter Username and Password"
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: (){
+                                          Navigator.pop(context) ;
+                                        },
+                                        child: Text("Ok",style: TextStyle(color: Colors.black54),),
+                                      )
+                                    ],
+                                  );
+                                },
+                              );
+                            }
                           },
-                        );
-                      }
-                    },
-                    child: Text(
-                      'Login',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
+                          child: Text(
+                            'Login',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 10),
                   Center(
@@ -198,7 +205,7 @@ class _LoginState extends State<Login> {
                       },
                       child: Text(
                         'Sign Up',
-                        style: TextStyle(color: Colors.blue),
+                        style: TextStyle(color: Color.fromRGBO(11, 52, 110,1)),
                       ),
                     ),
                   ),

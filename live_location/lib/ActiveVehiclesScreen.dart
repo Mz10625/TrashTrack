@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:live_location/login.dart';
+import 'package:live_location/map_screen.dart';
 
 class ActiveVehiclesScreen extends StatefulWidget {
   const ActiveVehiclesScreen({super.key});
@@ -18,7 +19,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // title: Text('Active Vehicles'),
+        backgroundColor: Colors.deepPurple.shade50,
       ),
       drawer: Drawer(
         child: Column(
@@ -68,7 +69,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
             const Padding(
               padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
               child: Text(
-                'View real time location of vehicles in your ward',
+                'View real time location of vehicles in your area',
                 style: TextStyle(fontSize: 15, color: Color.fromRGBO(99, 111, 129, 1), fontWeight: FontWeight.w500),
               ),
             ),
@@ -140,9 +141,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: () {
-                    // Add your onPressed functionality here
-                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black87,
                     padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
@@ -156,6 +154,12 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                     'View Location',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white), // Text styling
                   ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MapScreen()),
+                    );
+                  },
                 )
 
               ],
