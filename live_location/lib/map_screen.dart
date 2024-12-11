@@ -2,8 +2,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:live_location/firebase_operations.dart';
-import 'package:location/location.dart';
 import 'package:mapmyindia_gl/mapmyindia_gl.dart';
 
 class MapScreen extends StatefulWidget {
@@ -21,8 +21,10 @@ class _MapScreenState extends State<MapScreen> {
 
   final firestore = FirebaseFirestore.instance;
   late MapmyIndiaMapController mapController;
-  LatLng? currentLocation;
+  LatLng? _currentLocation;
   List<Map<String, dynamic>> vehicleLocations = [];
+  static const platform = MethodChannel('com.example.location');
+  String _locationMessage = "No location yet";
 
   Future<Uint8List> _loadAssetImage(String path) async {
     final ByteData data = await rootBundle.load(path);
@@ -46,7 +48,7 @@ class _MapScreenState extends State<MapScreen> {
   void addCurrentLocationMarker() async{
     await mapController.addSymbol(
       SymbolOptions(
-        geometry: currentLocation!,
+        geometry: _currentLocation!,
         iconImage: "home-icon",
         iconSize: 0.2,
         textField: "Your Location",
@@ -67,24 +69,59 @@ class _MapScreenState extends State<MapScreen> {
     fetchVehicleLocations();
   }
 
-  Future<void> fetchCurrentLocation() async {
-    final location = Location();
-    bool serviceEnabled = await location.serviceEnabled();
+  Future<void> startLocationUpdates() async {
+    try {
+      await platform.invokeMethod('startLocationUpdates');
+      setState(() {
+        _locationMessage = "Location updates started.";
+      });
+    } on PlatformException catch (e) {
+      setState(() {
+        _locationMessage = "Failed to start location updates: ${e.message}";
+      });
+    }
+    print(_locationMessage);
+  }
+
+
+    Future<void> fetchCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (!serviceEnabled) return;
+      print('Location services are disabled.');
+      // return;
     }
-
-    PermissionStatus permissionGranted = await location.hasPermission();
-    if (permissionGranted != PermissionStatus.granted) {
-      permissionGranted = await location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) return;
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        print('Location permission are denied.');
+        return;
+      }
     }
-
-    final locData = await location.getLocation();
-    setState(() {
-      currentLocation = LatLng(locData.latitude!, locData.longitude!);
-    });
+    if (permission == LocationPermission.deniedForever) {
+      print('Location permission are permanently denied.');
+      return;
+    }
+    print('Getting Location.');
+    try {
+      await platform.invokeMethod('startLocationUpdates');
+      setState(() {
+        _locationMessage = "Location updates started.";
+      });
+    } on PlatformException catch (e) {
+      setState(() {
+        _locationMessage = "Failed to start location updates: ${e.message}";
+      });
+    }
+    print(_locationMessage);
+    // Position currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+    //
+    // setState(() {
+    //   _currentLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
+    // });
   }
 
   Future<void> fetchVehicleLocations() async {
@@ -146,10 +183,10 @@ class _MapScreenState extends State<MapScreen> {
               SizedBox(
                 height: MediaQuery.of(context).size.height / 1.8,
                 width: MediaQuery.of(context).size.width / 1.1,
-                child: currentLocation == null || vehicleLocations.isEmpty ? const Center(child: CircularProgressIndicator()) :
+                child: _currentLocation == null || vehicleLocations.isEmpty ? const Center(child: CircularProgressIndicator()) :
                   MapmyIndiaMap(
                     initialCameraPosition: CameraPosition(
-                      target: currentLocation!,
+                      target: _currentLocation!,
                       zoom: 14.0,
                     ),
                     onMapCreated: (map) async {
@@ -163,7 +200,7 @@ class _MapScreenState extends State<MapScreen> {
                         "home-icon",
                         await _loadAssetImage("assets/images/home.png"),
                       );
-                      if (currentLocation != null) {
+                      if (_currentLocation != null) {
                         addCurrentLocationMarker();
                       }
                       addVehicleMarker();
@@ -178,3 +215,24 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 }
+
+
+// Future<void> fetchCurrentLocation() async {
+//   final location = Location();
+//   bool serviceEnabled = await location.serviceEnabled();
+//   if (!serviceEnabled) {
+//     serviceEnabled = await location.requestService();
+//     if (!serviceEnabled) return;
+//   }
+//
+//   PermissionStatus permissionGranted = await location.hasPermission();
+//   if (permissionGranted != PermissionStatus.granted) {
+//     permissionGranted = await location.requestPermission();
+//     if (permissionGranted != PermissionStatus.granted) return;
+//   }
+//
+//   final locData = await location.getLocation();
+//   setState(() {
+//     currentLocation = LatLng(locData.latitude!, locData.longitude!);
+//   });
+// }
