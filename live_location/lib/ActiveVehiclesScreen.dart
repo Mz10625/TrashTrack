@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:live_location/firebase_operations.dart';
@@ -19,33 +19,36 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.deepPurple.shade50,
+        // backgroundColor: Colors.white,
       ),
       drawer: Drawer(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text(''),
-              accountEmail: Text(user?.email ?? ''),
+              accountName: const Text(''),
+              accountEmail: Text(user?.email ?? '', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500, fontSize: 15)),
               currentAccountPicture: const CircleAvatar(
-                child: Icon(Icons.person),
+                child: Icon(Icons.person, color: Colors.black54,),
               ),
-              decoration: const BoxDecoration(color: Colors.black54),
+              decoration: const BoxDecoration(color: Color.fromRGBO(77, 176, 234, 0.45)),
             ),
+            // ListTile(
+            //   leading: const Icon(Icons.update),
+            //   title: const Text('Update Password' ),
+            //   onTap: () {
+            //     Navigator.push(context, MaterialPageRoute(builder: (context) => const UpdatePasswordPage()),);
+            //   },
+            // ),
             ListTile(
-              leading: Icon(Icons.update),
-              title: Text('Update Profile'),
-              onTap: () {
-
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.logout),
-              title: Text('Logout'),
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
               onTap: () async{
                 try {
                   await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()),);
+                  if(mounted){
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Login()),);
+                  }
                 } catch (e) {
                   print("Error signing out: $e");
                 }
@@ -55,7 +58,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
         ),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -69,18 +72,18 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
             const Padding(
               padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
               child: Text(
-                'View real time location of vehicles in your area',
-                style: TextStyle(fontSize: 15, color: Color.fromRGBO(99, 111, 129, 1), fontWeight: FontWeight.w500),
+                'Garbage collection vehicles in your area',
+                style: TextStyle(fontSize: 15, color: Color.fromRGBO(99, 111, 129, 1), fontWeight: FontWeight.w500, ),
               ),
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             Column(
               children: [
                 FutureBuilder<Map<String, dynamic>>(
                   future: fetchCombinedData(),
                   builder: (context, snapshot) {
                     if (snapshot.hasError || !snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
 
                     final combinedData = snapshot.data!;
@@ -121,7 +124,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                                       DataCell(Text('${vehicle['vehicle_no']}')),
                                       DataCell(Text('${vehicle['ward_no']}')),
                                       DataCell(Text(wardName)),
-                                      DataCell(Text('${vehicle['status']}')),
+                                      DataCell(vehicle['status'] == 'Inactive' ? Text('${vehicle['status']}',style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),) : Text('${vehicle['status']}',style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w500),)),
                                     ],
                                   );
                                 }).toList(),

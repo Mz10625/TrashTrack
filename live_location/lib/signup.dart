@@ -16,7 +16,6 @@ class _SignUpState extends State<SignUp> {
   TextEditingController pass = TextEditingController();
   TextEditingController email = TextEditingController();
   String? selectedWard;
-
   List<Map<String, dynamic>> wards = [];
 
   @override
@@ -97,7 +96,7 @@ class _SignUpState extends State<SignUp> {
             right: 0,
             child: Container(
               height: MediaQuery.of(context).size.height * 0.4,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 image: DecorationImage(
                   image: AssetImage('assets/images/kitchen.jpg'),
                   fit: BoxFit.cover,
@@ -109,8 +108,8 @@ class _SignUpState extends State<SignUp> {
             alignment: Alignment.bottomCenter,
             child: Container(
               height: MediaQuery.of(context).size.height * 0.65,
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 boxShadow: [
@@ -125,7 +124,7 @@ class _SignUpState extends State<SignUp> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Create Account',
                       style: TextStyle(
                         fontSize: 24,
@@ -133,7 +132,7 @@ class _SignUpState extends State<SignUp> {
                         color: Colors.black,
                       ),
                     ),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     // Email Field
                     TextField(
                       decoration: InputDecoration(
@@ -145,10 +144,10 @@ class _SignUpState extends State<SignUp> {
                       keyboardType: TextInputType.emailAddress,
                       controller: email,
                     ),
-                    SizedBox(height: 15),
+                    const SizedBox(height: 15),
                     DropdownButtonFormField<String>(
                       value: selectedWard,
-                      hint: Text('Select Ward'),
+                      hint: const Text('Select Ward'),
                       decoration: InputDecoration(
                         labelText: 'Ward Number',
                         border: OutlineInputBorder(
@@ -169,7 +168,7 @@ class _SignUpState extends State<SignUp> {
                         });
                       },
                     ),
-                    SizedBox(height: 15),
+                    const SizedBox(height: 15),
                     // Password Field
                     TextField(
                       obscureText: !_passwordVisible,
@@ -195,7 +194,7 @@ class _SignUpState extends State<SignUp> {
                     // Sign Up Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Colors.purple.shade300,
                         minimumSize: Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -217,7 +216,7 @@ class _SignUpState extends State<SignUp> {
                             MaterialPageRoute(builder: (context) => Login()),
                           );
                         },
-                        child: Text(
+                        child: const Text(
                           'Already have an account? Log In',
                           style: TextStyle(color: Colors.blue),
                         ),

@@ -22,10 +22,9 @@ class _MapScreenState extends State<MapScreen> {
   final firestore = FirebaseFirestore.instance;
   late MapmyIndiaMapController mapController;
   LatLng? _currentLocation;
-  bool _hasCurrentLocation = false;
   List<Map<String, dynamic>> vehicleLocations = [];
-  static const platform = MethodChannel('com.example.location');
-  String _locationMessage = "No location yet";
+  // static const platform = MethodChannel('com.example.location');
+  // String _locationMessage = "No location yet";
 
 
   Future<Uint8List> _loadAssetImage(String path) async {
@@ -58,6 +57,17 @@ class _MapScreenState extends State<MapScreen> {
         // textColor: "Orange",
       ),
     );
+  }
+  Future<void> moveToCurrentLocation() async {
+    if (_currentLocation != null) {
+      await mapController.moveCamera(
+        CameraUpdate.newLatLngZoom(_currentLocation!, 14.0),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Current location is unavailable")),
+      );
+    }
   }
 
   @override
@@ -95,6 +105,7 @@ class _MapScreenState extends State<MapScreen> {
       print('Location services are disabled.');
       if(await _promptLocationServices() == false){
           Navigator.pop(context);
+          return;
       }
     }
     permission = await Geolocator.checkPermission();
@@ -109,34 +120,15 @@ class _MapScreenState extends State<MapScreen> {
       print('Location permission are permanently denied.');
       return;
     }
-    print('Getting Location.');
-    try {
-      await platform.invokeMethod('getLastKnownLocation');
+    Position currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+    if(mounted){
       setState(() {
-        _locationMessage = "Location updates started.";
-      });
-      platform.setMethodCallHandler((call) async {
-        if (call.method == 'locationUpdate') {
-          final double latitude = call.arguments['latitude'];
-          final double longitude = call.arguments['longitude'];
-          print('Location update: Latitude: $latitude, Longitude: $longitude');
-        }
-      });
-    } on PlatformException catch (e) {
-      setState(() {
-        _locationMessage = "Failed to start location updates: ${e.message}";
+        _currentLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
       });
     }
-    print(_locationMessage);
-    // Position currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
-    //
-    // setState(() {
-    //   _currentLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
-    // });
   }
 
   Future<bool> _promptLocationServices() async {
-
       bool openSettings = await _showEnableLocationDialog();
       if (openSettings) {
         await Geolocator.openLocationSettings();
@@ -166,8 +158,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ],
       ),
-    ) ??
-        false;
+    ) ?? false;
   }
 
   Future<void> fetchVehicleLocations() async {
@@ -178,37 +169,40 @@ class _MapScreenState extends State<MapScreen> {
         .where('ward_no', isEqualTo: user['ward_number'])
         .get();
 
-    setState(() {
-      vehicleLocations = vehicleSnapshot.docs.map((doc) {
-        final data = doc.data();
-        GeoPoint location = data['current_location'];
-        return {
-          'id': doc.id,
-          'latitude': location.latitude,
-          'longitude': location.longitude,
-          'name': data['vehicle_no'] ?? 'Unknown Vehicle',
-        };
-      }).toList().cast<Map<String, dynamic>>();
-    });
-    // print(vehicleLocations.isEmpty);
-  }
-
-  void listenForVehicleUpdates() async{
-    Map<String, dynamic> user = await fetchCurrentUserData();
-    firestore.collection('vehicles').where('ward_no', isEqualTo: user['ward_number']).snapshots().listen((vehicleSnapshot) {
-      // setState(() {
+    if(mounted){
+      setState(() {
         vehicleLocations = vehicleSnapshot.docs.map((doc) {
           final data = doc.data();
           GeoPoint location = data['current_location'];
-
           return {
             'id': doc.id,
             'latitude': location.latitude,
             'longitude': location.longitude,
             'name': data['vehicle_no'] ?? 'Unknown Vehicle',
           };
-        }).toList();
-      // });
+        }).toList().cast<Map<String, dynamic>>();
+      });
+    }
+  }
+
+  void listenForVehicleUpdates() async{
+    Map<String, dynamic> user = await fetchCurrentUserData();
+    firestore.collection('vehicles').where('ward_no', isEqualTo: user['ward_number']).snapshots().listen((vehicleSnapshot) {
+      if(mounted){
+        setState(() {
+          vehicleLocations = vehicleSnapshot.docs.map((doc) {
+            final data = doc.data();
+            GeoPoint location = data['current_location'];
+
+            return {
+              'id': doc.id,
+              'latitude': location.latitude,
+              'longitude': location.longitude,
+              'name': data['vehicle_no'] ?? 'Unknown Vehicle',
+            };
+          }).toList();
+        });
+      }
       addVehicleMarker();
       print("Vehicle location updated");
     });
@@ -218,8 +212,14 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Vehicle Locations"),
+        title: const Text("Live Locations"),
         backgroundColor: Colors.deepPurple.shade50,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -228,33 +228,53 @@ class _MapScreenState extends State<MapScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: MediaQuery.of(context).size.height / 1.8,
+                height: MediaQuery.of(context).size.height / 1.5,
                 width: MediaQuery.of(context).size.width / 1.1,
-                child: _currentLocation == null || vehicleLocations.isEmpty ? const Center(child: CircularProgressIndicator()) :
-                  MapmyIndiaMap(
-                    initialCameraPosition: CameraPosition(
+                child: _currentLocation == null || vehicleLocations.isEmpty ?
+                const Center(
+                    child: CircularProgressIndicator(
+                            backgroundColor: Colors.purple,
+                            valueColor: AlwaysStoppedAnimation(Colors.white70),
+                            strokeWidth: 5,
+                    )
+                ) :
+                Stack(
+                  children: [
+                    MapmyIndiaMap(
+                      initialCameraPosition: CameraPosition(
                       target: _currentLocation!,
-                      zoom: 14.0,
+                        zoom: 14.0,
+                      ),
+                      onMapCreated: (map) async {
+                        mapController = map;
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        await mapController.addImage(
+                          "garbage-vehicle-icon",
+                          await _loadAssetImage("assets/images/logo.png"),
+                        );
+                        await mapController.addImage(
+                          "home-icon",
+                          await _loadAssetImage("assets/images/home.png"),
+                        );
+                        if (_currentLocation != null) {
+                          addCurrentLocationMarker();
+                        }
+                        addVehicleMarker();
+                        listenForVehicleUpdates();
+                      },
                     ),
-                    onMapCreated: (map) async {
-                      mapController = map;
-                      await Future.delayed(const Duration(milliseconds: 500));
-                      await mapController.addImage(
-                        "garbage-vehicle-icon",
-                        await _loadAssetImage("assets/images/logo.png"),
-                      );
-                      await mapController.addImage(
-                        "home-icon",
-                        await _loadAssetImage("assets/images/home.png"),
-                      );
-                      if (_currentLocation != null) {
-                        addCurrentLocationMarker();
-                      }
-                      addVehicleMarker();
-                      listenForVehicleUpdates();
-                    },
-                  ),
-              ),
+                    Positioned(
+                      bottom: MediaQuery.of(context).size.height * 0.02,
+                      right: MediaQuery.of(context).size.width * 0.04,
+                        child: FloatingActionButton(
+                          backgroundColor: Colors.orangeAccent.shade100,
+                          onPressed: moveToCurrentLocation,
+                            child: const Icon(Icons.my_location,),
+                          ),
+                    ),
+                  ]
+                ),
+              )
             ],
           ),
         ],
@@ -264,22 +284,20 @@ class _MapScreenState extends State<MapScreen> {
 }
 
 
-// Future<void> fetchCurrentLocation() async {
-//   final location = Location();
-//   bool serviceEnabled = await location.serviceEnabled();
-//   if (!serviceEnabled) {
-//     serviceEnabled = await location.requestService();
-//     if (!serviceEnabled) return;
-//   }
-//
-//   PermissionStatus permissionGranted = await location.hasPermission();
-//   if (permissionGranted != PermissionStatus.granted) {
-//     permissionGranted = await location.requestPermission();
-//     if (permissionGranted != PermissionStatus.granted) return;
-//   }
-//
-//   final locData = await location.getLocation();
-//   setState(() {
-//     currentLocation = LatLng(locData.latitude!, locData.longitude!);
-//   });
+// try {
+// await platform.invokeMethod('getLastKnownLocation');
+// setState(() {
+// _locationMessage = "Location updates started.";
+// });
+// platform.setMethodCallHandler((call) async {
+// if (call.method == 'locationUpdate') {
+// final double latitude = call.arguments['latitude'];
+// final double longitude = call.arguments['longitude'];
+// print('Location update: Latitude: $latitude, Longitude: $longitude');
+// }
+// });
+// } on PlatformException catch (e) {
+// setState(() {
+// _locationMessage = "Failed to start location updates: ${e.message}";
+// });
 // }

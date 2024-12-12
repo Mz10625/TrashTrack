@@ -86,7 +86,7 @@ Future<Map<String, dynamic>> fetchCurrentUserData() async {
 
     if (userSnapshot.exists) {
       final userData = userSnapshot.data() as Map<String, dynamic>;
-      print("User data: $userData");
+      // print("User data: $userData");
       return userData;
     } else {
       print("User document does not exist.");
