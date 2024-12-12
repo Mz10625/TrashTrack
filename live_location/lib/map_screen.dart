@@ -22,9 +22,11 @@ class _MapScreenState extends State<MapScreen> {
   final firestore = FirebaseFirestore.instance;
   late MapmyIndiaMapController mapController;
   LatLng? _currentLocation;
+  bool _hasCurrentLocation = false;
   List<Map<String, dynamic>> vehicleLocations = [];
   static const platform = MethodChannel('com.example.location');
   String _locationMessage = "No location yet";
+
 
   Future<Uint8List> _loadAssetImage(String path) async {
     final ByteData data = await rootBundle.load(path);
@@ -69,29 +71,31 @@ class _MapScreenState extends State<MapScreen> {
     fetchVehicleLocations();
   }
 
-  Future<void> startLocationUpdates() async {
-    try {
-      await platform.invokeMethod('startLocationUpdates');
-      setState(() {
-        _locationMessage = "Location updates started.";
-      });
-    } on PlatformException catch (e) {
-      setState(() {
-        _locationMessage = "Failed to start location updates: ${e.message}";
-      });
-    }
-    print(_locationMessage);
-  }
+  // Future<void> startLocationUpdates() async {
+  //   try {
+  //     await platform.invokeMethod('startLocationUpdates');
+  //     setState(() {
+  //       _locationMessage = "Location updates started.";
+  //     });
+  //   } on PlatformException catch (e) {
+  //     setState(() {
+  //       _locationMessage = "Failed to start location updates: ${e.message}";
+  //     });
+  //   }
+  //   print(_locationMessage);
+  // }
 
 
-    Future<void> fetchCurrentLocation() async {
+  Future<void> fetchCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       print('Location services are disabled.');
-      // return;
+      if(await _promptLocationServices() == false){
+          Navigator.pop(context);
+      }
     }
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -107,9 +111,16 @@ class _MapScreenState extends State<MapScreen> {
     }
     print('Getting Location.');
     try {
-      await platform.invokeMethod('startLocationUpdates');
+      await platform.invokeMethod('getLastKnownLocation');
       setState(() {
         _locationMessage = "Location updates started.";
+      });
+      platform.setMethodCallHandler((call) async {
+        if (call.method == 'locationUpdate') {
+          final double latitude = call.arguments['latitude'];
+          final double longitude = call.arguments['longitude'];
+          print('Location update: Latitude: $latitude, Longitude: $longitude');
+        }
       });
     } on PlatformException catch (e) {
       setState(() {
@@ -122,6 +133,41 @@ class _MapScreenState extends State<MapScreen> {
     // setState(() {
     //   _currentLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
     // });
+  }
+
+  Future<bool> _promptLocationServices() async {
+
+      bool openSettings = await _showEnableLocationDialog();
+      if (openSettings) {
+        await Geolocator.openLocationSettings();
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (serviceEnabled) {
+            return true;
+        }
+      }
+      return false;
+  }
+
+  Future<bool> _showEnableLocationDialog() async {
+    return await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Enable Location Services"),
+        content: const Text(
+            "Location services are required for this app to work properly. Would you like to enable them?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("No"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Yes"),
+          ),
+        ],
+      ),
+    ) ??
+        false;
   }
 
   Future<void> fetchVehicleLocations() async {
@@ -144,6 +190,7 @@ class _MapScreenState extends State<MapScreen> {
         };
       }).toList().cast<Map<String, dynamic>>();
     });
+    // print(vehicleLocations.isEmpty);
   }
 
   void listenForVehicleUpdates() async{
