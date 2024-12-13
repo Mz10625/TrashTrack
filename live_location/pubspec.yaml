@@ -41,6 +41,7 @@ dependencies:
   firebase_database: ^10.5.5
   mapmyindia_gl: ^0.3.2
   geolocator: ^11.0.0
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

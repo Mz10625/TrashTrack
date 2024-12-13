@@ -18,9 +18,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        // backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(),
       drawer: Drawer(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -46,11 +44,11 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
               onTap: () async{
                 try {
                   await FirebaseAuth.instance.signOut();
-                  if(mounted){
+                  if(context.mounted){
                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Login()),);
                   }
                 } catch (e) {
-                  print("Error signing out: $e");
+                  // print("Error signing out: $e");
                 }
               },
             ),
@@ -93,27 +91,27 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                     return LayoutBuilder(
                       builder: (context, constraints) {
                         return SingleChildScrollView(
-                          scrollDirection: Axis.vertical, // Enables vertical scrolling
+                          scrollDirection: Axis.vertical,
                           child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal, // Enables horizontal scrolling
+                            scrollDirection: Axis.horizontal,
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth, // Ensures the table stretches to screen width
+                                minWidth: constraints.maxWidth,
                               ),
                               child: DataTable(
                                 columnSpacing: 20,
-                                headingRowColor: const WidgetStatePropertyAll(Color.fromRGBO(77, 176, 234, 0.45)),
+                                headingRowColor: WidgetStatePropertyAll(Colors.purple.shade300),
                                 columns: const [
-                                  DataColumn(label: Text('Vehicle No.')),
-                                  DataColumn(label: Text('Ward No.')),
-                                  DataColumn(label: Text('Ward Name')),
-                                  DataColumn(label: Text('Status')),
+                                  DataColumn(label: Text('Vehicle No.', style: TextStyle(color: Colors.white),)),
+                                  DataColumn(label: Text('Ward No.', style: TextStyle(color: Colors.white))),
+                                  DataColumn(label: Text('Ward Name', style: TextStyle(color: Colors.white))),
+                                  DataColumn(label: Text('Status', style: TextStyle(color: Colors.white))),
                                 ],
                                 rows: vehicles.asMap().entries.map((entry) {
                                   int index = entry.key;
                                   var vehicle = entry.value;
 
-                                  final wardName = wardsMap[vehicle['ward_no'].toString()] ?? 'Unknown';
+                                  final wardName = wardsMap[vehicle['ward_no'].toString()] ?? '';
                                   return DataRow(
                                     color: WidgetStatePropertyAll(
                                       index % 2 == 0
@@ -138,7 +136,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                 ),
               ],
             ),
-
             const SizedBox(height: 50.0),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -155,16 +152,15 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                   ),
                   child: const Text(
                     'View Location',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white), // Text styling
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
                   ),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => MapScreen()),
+                      MaterialPageRoute(builder: (context) => const MapScreen()),
                     );
                   },
                 )
-
               ],
             )
           ],

@@ -14,6 +14,7 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
   bool _passwordVisible = false;
+  bool _isLoading = false;
   TextEditingController pass = TextEditingController();
   TextEditingController email = TextEditingController();
 
@@ -148,25 +149,47 @@ class _LoginState extends State<Login> {
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                       ),
-                                      onPressed: () async {
+                                      onPressed: _isLoading ? null : () async {
                                         if (_formKey.currentState!.validate()) {
-                                          String status = await login(email.text, pass.text);
+                                          if(mounted){
+                                            setState(() {
+                                              _isLoading = true;
+                                            });
+                                          }
+                                          String status = await login(email.text.trim(), pass.text.trim());
+                                          if (mounted) {
+                                            setState(() {
+                                              _isLoading = false;
+                                            });
+                                          }
                                           if (status == "1") {
-                                            Navigator.push( context, MaterialPageRoute(
+                                            if(context.mounted){
+                                              Navigator.push( context, MaterialPageRoute(
                                                   builder: (context) => const ActiveVehiclesScreen()),
-                                            );
+                                              );
+                                            }
                                           }
                                           else {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(status),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
+                                            if(context.mounted){
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(status),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
                                           }
                                         }
                                       },
-                                      child: const Text(
+                                      child: _isLoading ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          backgroundColor: Colors.purple,
+                                          color: Colors.white,
+                                        ),
+                                      ) : const Text(
                                         'Login',
                                         style: TextStyle(fontSize: 18, color: Colors.white),
                                       ),
@@ -186,7 +209,11 @@ class _LoginState extends State<Login> {
                                   },
                                   child: const Text(
                                     'Sign Up',
-                                    style: TextStyle(color: Color.fromRGBO(11, 52, 110, 1)),
+                                    style: TextStyle(
+                                          color: Color.fromRGBO(11, 52, 110, 1),
+                                        // decoration: TextDecoration.underline,
+                                        // decorationThickness: 1.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -204,60 +231,10 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+  @override
+  void dispose() {
+    email.dispose();
+    pass.dispose();
+    super.dispose();
+  }
 }
-
-
-
-// else if (loginSuccess == -1) {
-//   showDialog(
-//     context: context,
-//     builder: (context) {
-//       return AlertDialog(
-//         icon: const Icon(Icons.signal_wifi_statusbar_connected_no_internet_4_outlined, color: Colors.orangeAccent, size: 45,),
-//         title:
-//             const Text(
-//               "Connection error!",
-//               style: TextStyle(fontWeight: FontWeight.w500),
-//               // textAlign: TextAlign.center,
-//             ),
-//         content: const Text(
-//           "Please check your Internet connection and try again",
-//           style: TextStyle(fontSize: 16),
-//           textAlign: TextAlign.center,
-//         ),
-//         actions: [
-//           TextButton(
-//             onPressed: () {
-//               Navigator.pop(context);
-//             },
-//             style: TextButton.styleFrom(
-//               foregroundColor: Colors.blue,
-//             ),
-//             child: const Text("Okay"),
-//           ),
-//         ],
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(15),
-//         ),
-//       );
-//     },
-//   );
-// }
-
-// showDialog(
-//   context: context,
-//   builder: (context) {
-//     return AlertDialog(
-//       title: const Text("Login Failed"),
-//       content: const Text(
-//           "Incorrect Email or Password"),
-//       actions: [
-//         TextButton(
-//             onPressed: () {
-//               Navigator.pop(context);
-//             },
-//             child: const Text("Ok")),
-//       ],
-//     );
-//   },
-// );
