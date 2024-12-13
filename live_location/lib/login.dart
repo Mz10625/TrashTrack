@@ -1,11 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:live_location/ActiveVehiclesScreen.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:live_location/reset_password.dart';
 import 'signup.dart';
 
-class Login extends StatefulWidget{
+class Login extends StatefulWidget {
   const Login({super.key});
 
   @override
@@ -13,6 +12,7 @@ class Login extends StatefulWidget{
 }
 
 class _LoginState extends State<Login> {
+  final _formKey = GlobalKey<FormState>();
   bool _passwordVisible = false;
   TextEditingController pass = TextEditingController();
   TextEditingController email = TextEditingController();
@@ -20,201 +20,244 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Positioned(
-            top: -50,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.58,
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/login1.png'),
-                  fit: BoxFit.contain,
-                ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
               ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.5,
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    offset: Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Welcome Back,',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'E-mail',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    controller: email,
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    obscureText: !_passwordVisible,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      suffixIcon: IconButton(onPressed: ()=>{
-                        setState((){
-                          _passwordVisible = !_passwordVisible;
-                          // password = pass.text;
-                        }),
-                      },
-                        icon: !_passwordVisible ? const Icon(Icons.visibility_rounded) : const Icon(Icons.visibility_off)
-                      ),
-                    ),
-                    controller: pass,
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () async {
-                        Navigator.push(context, MaterialPageRoute(builder: (context)=> const ForgotPasswordPage()));
-                      },
-                      child: const Text(
-                        'Forgot Password?',
-                        style: TextStyle(color: Color.fromRGBO(11, 52, 110,1)),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width/3,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple.shade300,
-                            minimumSize: Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: ()async {
-                            if(pass.text != "" && email.text != ""){
-                              // int login_success = 1;
-                              int login_success = await login(email.text,pass.text);
-                              if(login_success == 1){
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => ActiveVehiclesScreen()));
-                              }
-                              else if(login_success == -1){
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text("Network Error"),
-                                      content: Text("Please check your Internet connectivity and try again"),
-                                      actions: [
-                                        TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text("Ok")
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              }
-                              else{
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: Text("Login Failed"),
-                                      content: Text("Incorrect Email or Password"),
-                                      actions: [
-                                        TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text("Ok")
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              }
-                            }
-                            else{
-                              showDialog(
-                                context: context,
-                                builder: (context){
-                                  return AlertDialog(
-                                    title: Text("Missing Fileds"),
-                                    content: Text(
-                                        "Please Enter Username and Password"
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: (){
-                                          Navigator.pop(context) ;
-                                        },
-                                        child: Text("Ok",style: TextStyle(color: Colors.black54),),
-                                      )
-                                    ],
-                                  );
-                                },
-                              );
-                            }
-                          },
-                          child: const Text(
-                            'Login',
-                            style: TextStyle(fontSize: 18, color: Colors.white),
+              child: IntrinsicHeight(
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: -50,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.58,
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/images/login1.png'),
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SignUp()),
-                        );
-                      },
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(color: Color.fromRGBO(11, 52, 110,1)),
+                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 10,
+                              offset: Offset(0, -5),
+                            ),
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Welcome Back,',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: email,
+                                decoration: InputDecoration(
+                                  labelText: 'E-mail',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your email';
+                                  } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                                    return 'Please enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: pass,
+                                obscureText: !_passwordVisible,
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  suffixIcon: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _passwordVisible = !_passwordVisible;
+                                      });
+                                    },
+                                    icon: !_passwordVisible
+                                        ? const Icon(Icons.visibility_rounded)
+                                        : const Icon(Icons.visibility_off),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your password';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () async {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => const ForgotPasswordPage()),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Forgot Password?',
+                                    style: TextStyle(color: Color.fromRGBO(11, 52, 110, 1)),
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: MediaQuery.of(context).size.width / 3,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.purple.shade300,
+                                        minimumSize: const Size(double.infinity, 50),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () async {
+                                        if (_formKey.currentState!.validate()) {
+                                          String status = await login(email.text, pass.text);
+                                          if (status == "1") {
+                                            Navigator.push( context, MaterialPageRoute(
+                                                  builder: (context) => const ActiveVehiclesScreen()),
+                                            );
+                                          }
+                                          else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(status),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      child: const Text(
+                                        'Login',
+                                        style: TextStyle(fontSize: 18, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Center(
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => const SignUp()),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Sign Up',
+                                    style: TextStyle(color: Color.fromRGBO(11, 52, 110, 1)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
+
+
+
+// else if (loginSuccess == -1) {
+//   showDialog(
+//     context: context,
+//     builder: (context) {
+//       return AlertDialog(
+//         icon: const Icon(Icons.signal_wifi_statusbar_connected_no_internet_4_outlined, color: Colors.orangeAccent, size: 45,),
+//         title:
+//             const Text(
+//               "Connection error!",
+//               style: TextStyle(fontWeight: FontWeight.w500),
+//               // textAlign: TextAlign.center,
+//             ),
+//         content: const Text(
+//           "Please check your Internet connection and try again",
+//           style: TextStyle(fontSize: 16),
+//           textAlign: TextAlign.center,
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () {
+//               Navigator.pop(context);
+//             },
+//             style: TextButton.styleFrom(
+//               foregroundColor: Colors.blue,
+//             ),
+//             child: const Text("Okay"),
+//           ),
+//         ],
+//         shape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(15),
+//         ),
+//       );
+//     },
+//   );
+// }
+
+// showDialog(
+//   context: context,
+//   builder: (context) {
+//     return AlertDialog(
+//       title: const Text("Login Failed"),
+//       content: const Text(
+//           "Incorrect Email or Password"),
+//       actions: [
+//         TextButton(
+//             onPressed: () {
+//               Navigator.pop(context);
+//             },
+//             child: const Text("Ok")),
+//       ],
+//     );
+//   },
+// );

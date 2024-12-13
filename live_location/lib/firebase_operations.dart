@@ -3,23 +3,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-Future<int> login(String email, String password) async {
+Future<String> login(String email, String password) async {
   try{
     await FirebaseAuth.instance.signInWithEmailAndPassword(
       email: email ,
       password: password,
     );
-    return 1;
+    return "1";
   }
   on FirebaseAuthException catch (e) {
     print(e.code);
-    if(e.code == "network-request-failed"){
-      return -1;
-    }
-    else{
-      return -2;
-    }
-
+    // if(e.code == "network-request-failed"){
+    //   return -1;
+    // }
+    // else{
+    //   return -2;
+    // }
+    return e.message ?? "An error occured";
   }
 }
 
@@ -44,6 +44,7 @@ Future<String> signUp(String userEmail, String userPassword, String wardNumber) 
     return e.toString();
   }
 }
+
 
 Future<Map<String, dynamic>> fetchCombinedData() async {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
