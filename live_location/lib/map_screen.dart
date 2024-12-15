@@ -1,13 +1,12 @@
 import 'dart:async';
-// import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:mapmyindia_gl/mapmyindia_gl.dart';
-// import 'package:http/http.dart' as http;
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -17,29 +16,25 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
-  static const String ACCESS_TOKEN = "9ecd93fedbea8dcfd1dfcd0df0e7d1b5";
-  static const String REST_API_KEY = "9ecd93fedbea8dcfd1dfcd0df0e7d1b5";
-  static const String ATLAS_CLIENT_ID ="96dHZVzsAuuY2o7_yhcCsIgLxFgHYKZkLA3AC4vFr5wJFgGCvag0ubkJ6zk0b6BALPsTHYBmuae8ZwAHFdn3Og==";
-  static const String ATLAS_CLIENT_SECRET = "lrFxI-iSEg9L_R4EGPyA0OKRTT11Va2wQsIHtMMRxiPN2fwUK9vGGY1rbOw2nDKf300UdtpIz_5ISYFJDmQF1V26BKfdvpWf";
 
   final firestore = FirebaseFirestore.instance;
   late MapmyIndiaMapController mapController;
   LatLng? _currentLocation;
-  // List<Map<String, dynamic>> vehicleLocations = [];
   bool _isCheckingSettings = false;
   Completer<bool>? _settingsCompleter;
   Map<String, Symbol> vehicleMarkers = {};
+
+  // List<Map<String, dynamic>> vehicleLocations = [];
   // static const platform = MethodChannel('com.example.location');
-  // String _locationMessage = "No location yet";
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    MapmyIndiaAccountManager.setMapSDKKey(ACCESS_TOKEN);
-    MapmyIndiaAccountManager.setRestAPIKey(REST_API_KEY);
-    MapmyIndiaAccountManager.setAtlasClientId(ATLAS_CLIENT_ID);
-    MapmyIndiaAccountManager.setAtlasClientSecret(ATLAS_CLIENT_SECRET);
+    MapmyIndiaAccountManager.setMapSDKKey(dotenv.env['ACCESS_TOKEN']!);
+    MapmyIndiaAccountManager.setRestAPIKey(dotenv.env['REST_API_KEY']!);
+    MapmyIndiaAccountManager.setAtlasClientId(dotenv.env['ATLAS_CLIENT_ID']!);
+    MapmyIndiaAccountManager.setAtlasClientSecret(dotenv.env['ATLAS_CLIENT_SECRET']!);
     fetchCurrentLocation();
   }
   @override
@@ -211,40 +206,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
     });
   }
 
-  // Future<String> calculateETAWithTraffic(LatLng start, LatLng end) async {
-  //   const String baseUrl = "https://apis.mapmyindia.com/advancedmaps/v1";
-  //
-  //   const String url = "$baseUrl/$REST_API_KEY/route_eta?geometries=polyline&steps=false&resource=route";
-  //
-  //   try {
-  //     final response = await http.get(
-  //       Uri.parse("$url&start=${start.latitude},${start.longitude}&end=${end.latitude},${end.longitude}"),
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = jsonDecode(response.body);
-  //
-  //       if (data['routes'] != null && data['routes'].isNotEmpty) {
-  //         double durationInSeconds = data['routes'][0]['duration'];
-  //
-  //         // Convert seconds to minutes and seconds
-  //         int minutes = (durationInSeconds / 60).floor();
-  //         int seconds = (durationInSeconds % 60).floor();
-  //
-  //         print("${minutes}m ${seconds}s");
-  //         return "${minutes}m ${seconds}s";
-  //       } else {
-  //         return "Route not available";
-  //       }
-  //     } else {
-  //       throw Exception("Failed to fetch ETA: ${response.reasonPhrase}");
-  //     }
-  //   } catch (e) {
-  //     print("Error calculating ETA: $e");
-  //     return "Error calculating ETA";
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -296,9 +257,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
                         if (_currentLocation != null) {
                           addCurrentLocationMarker();
                         }
-                        // addVehicleMarker();
                         listenForVehicleUpdates();
-
                       },
                     ),
                     Positioned(
@@ -315,11 +274,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
               ),
             ],
           ),
-          // ElevatedButton(
-          //     onPressed:()async{
-          //       calculateETAWithTraffic(_currentLocation!, LatLng(vehicleMarkers.values.first.options.geometry!.latitude, vehicleMarkers.values.first.options.geometry!.latitude));
-          //     },
-          //     child: const Text("ETA"))
         ],
       ),
     );

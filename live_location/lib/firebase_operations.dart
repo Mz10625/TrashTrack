@@ -1,35 +1,35 @@
-
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 Future<String> login(String email, String password) async {
   try{
-    await FirebaseAuth.instance.signInWithEmailAndPassword(
+    UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
       email: email ,
       password: password,
     );
-    return "1";
+    User? user = userCredential.user;
+    if (user != null && user.emailVerified) {
+      return "1";
+    }
+    else if(user != null){
+      await user.delete();
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
+    }
+    return "Email not verified. Please verify your email.";
   }
   on FirebaseAuthException catch (e) {
-    print(e.code);
-    // if(e.code == "network-request-failed"){
-    //   return -1;
-    // }
-    // else{
-    //   return -2;
-    // }
+    // print(e.code);
     return e.message ?? "An error occured";
   }
 }
 
 Future<String> signUp(String userEmail, String userPassword, String wardNumber) async {
   try {
-    UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+    final UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: userEmail,
       password: userPassword,
     );
-
+    await userCredential.user?.sendEmailVerification();
     User? user = userCredential.user;
 
     if (user != null) {
@@ -40,7 +40,6 @@ Future<String> signUp(String userEmail, String userPassword, String wardNumber) 
     }
     return "1";
   } catch (e) {
-    print(e.toString());
     return e.toString();
   }
 }
@@ -62,10 +61,10 @@ Future<Map<String, dynamic>> fetchCombinedData() async {
 
   final wardsMap = Map.fromEntries(
     wardSnapshot.docs.map((doc) {
-      final data = Map<String, dynamic>.from(doc.data() as Map); // Safely cast to Map<String, dynamic>
+      final data = Map<String, dynamic>.from(doc.data() as Map);
       return MapEntry(
-        data['number'].toString(),  // Ensure ward_no is a String
-        data['name'].toString(), // Ensure ward_name is a String
+        data['number'].toString(),
+        data['name'].toString(),
       );
     }),
   );

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'login.dart';
@@ -58,13 +59,15 @@ class _SignUpState extends State<SignUp> {
           });
         }
         if (status == "1" && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Account created successfully!'),backgroundColor: Colors.green,),
-            );
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const Login()),
-            );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'A verification email has been sent. Please verify your email to continue.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
         } else if(mounted){
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(status.substring(status.indexOf(']') + 2)),backgroundColor: Colors.red,),
@@ -126,25 +129,6 @@ class _SignUpState extends State<SignUp> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        TextFormField(
-                          controller: email,
-                          decoration: InputDecoration(
-                            labelText: 'Email Address',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email address';
-                            } else if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+').hasMatch(value)) {
-                              return 'Please enter a valid email address';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 15),
                         DropdownButtonFormField<String>(
                           value: selectedWard,
                           hint: const Text('Select Ward'),
@@ -170,6 +154,25 @@ class _SignUpState extends State<SignUp> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please select a ward';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 15),
+                        TextFormField(
+                          controller: email,
+                          decoration: InputDecoration(
+                            labelText: 'Email Address',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email address';
+                            } else if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+').hasMatch(value)) {
+                              return 'Please enter a valid email address';
                             }
                             return null;
                           },
@@ -238,9 +241,8 @@ class _SignUpState extends State<SignUp> {
                         Center(
                           child: TextButton(
                             onPressed: () {
-                              Navigator.push(
+                              Navigator.pop(
                                 context,
-                                MaterialPageRoute(builder: (context) => const Login()),
                               );
                             },
                             child: const Text('Already have an account? Log In',
