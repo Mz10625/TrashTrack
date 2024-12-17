@@ -18,7 +18,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
 
   final firestore = FirebaseFirestore.instance;
-  late MapmyIndiaMapController mapController;
+  MapmyIndiaMapController? mapController;
   LatLng? _currentLocation;
   bool _isCheckingSettings = false;
   Completer<bool>? _settingsCompleter;
@@ -55,7 +55,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
   }
 
   void addCurrentLocationMarker() async{
-    await mapController.addSymbol(
+    await mapController!.addSymbol(
       SymbolOptions(
         geometry: _currentLocation!,
         iconImage: "home-icon",
@@ -69,7 +69,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
 
   Future<void> moveToCurrentLocation() async {
     if (_currentLocation != null) {
-      await mapController.moveCamera(
+      await mapController!.moveCamera(
         CameraUpdate.newLatLngZoom(_currentLocation!, 14.0),
       );
     } else {
@@ -93,16 +93,16 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // print('Location permission are denied.');
+      if (permission == LocationPermission.denied && mounted) {
+        Navigator.pop(context);
         return;
       }
     }
-    if (permission == LocationPermission.deniedForever) {
-      // print('Location permission are permanently denied.');
+    if (permission == LocationPermission.deniedForever && mounted) {
+      Navigator.pop(context);
       return;
     }
-    Position currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+    Position currentPosition = await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: LocationAccuracy.best));
     if(mounted){
       setState(() {
         _currentLocation = LatLng(currentPosition.latitude, currentPosition.longitude);
@@ -183,14 +183,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
           // print("${existingLatLng.latitude} ${existingLatLng.longitude}");
           // print("$newLat $newLng");
           if (existingLatLng.latitude != newLat || existingLatLng.longitude != newLng) {
-            mapController.updateSymbol(
+            mapController!.updateSymbol(
               existingMarker,
               SymbolOptions(geometry: LatLng(newLat, newLng)),
             );
           }
         }
         else{
-          mapController.addSymbol(
+          mapController!.addSymbol(
             SymbolOptions(
               geometry: LatLng(newLat, newLng),
               iconSize: 0.2,
@@ -245,12 +245,12 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
                       ),
                       onMapCreated: (map) async {
                         mapController = map;
-                        await Future.delayed(const Duration(milliseconds: 500));
-                        await mapController.addImage(
+                        await Future.delayed(const Duration(seconds: 2));
+                        await mapController!.addImage(
                           "garbage-vehicle-icon",
                           await _loadAssetImage("assets/images/logo.png"),
                         );
-                        await mapController.addImage(
+                        await mapController!.addImage(
                           "home-icon",
                           await _loadAssetImage("assets/images/home.png"),
                         );

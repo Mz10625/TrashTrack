@@ -89,11 +89,11 @@ Future<Map<String, dynamic>> fetchCurrentUserData() async {
       // print("User data: $userData");
       return userData;
     } else {
-      print("User document does not exist.");
+      // print("User document does not exist.");
     }
   } else {
-    print("No user is logged in.");
+    // print("No user is logged in.");
   }
-  return Map();
+  return <String, dynamic>{};
 }
 
