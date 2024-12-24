@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:live_location/login.dart';
 import 'package:live_location/map_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ActiveVehiclesScreen extends StatefulWidget {
   const ActiveVehiclesScreen({super.key});
@@ -44,6 +45,8 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
               onTap: () async{
                 try {
                   await FirebaseAuth.instance.signOut();
+                  final prefs = await SharedPreferences.getInstance();
+                  prefs.setBool('isLoggedIn', false);
                   if(context.mounted){
                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Login()),);
                   }

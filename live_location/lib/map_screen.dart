@@ -102,7 +102,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
       Navigator.pop(context);
       return;
     }
-    Position currentPosition = await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: LocationAccuracy.best));
+
+    Position currentPosition = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),forceAndroidLocationManager: true);
     if(mounted){
       setState(() {
         _currentLocation = LatLng(currentPosition.latitude, currentPosition.longitude);

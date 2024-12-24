@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:live_location/ActiveVehiclesScreen.dart';
 import 'dart:async';
 
 import 'package:live_location/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashWidget extends StatefulWidget {
   const SplashWidget({super.key});
@@ -9,15 +11,24 @@ class SplashWidget extends StatefulWidget {
   @override
   State<SplashWidget> createState() => _SplashWidgetState();
 }
+bool? isLoggedIn;
 
 class _SplashWidgetState extends State<SplashWidget> {
+
+  Future<void> loggedIn() async{
+    final prefs = await SharedPreferences.getInstance();
+    isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  }
+
   @override
   void initState() {
     super.initState();
+    loggedIn();
+
     Timer(const Duration(seconds: 3),
             ()=>Navigator.pushReplacement(context,
             MaterialPageRoute(builder:
-                (context) => const Login(),
+                (context) => isLoggedIn! ? const ActiveVehiclesScreen() :const Login(),
             )
         )
     );

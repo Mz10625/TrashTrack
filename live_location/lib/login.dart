@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:live_location/ActiveVehiclesScreen.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:live_location/reset_password.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'signup.dart';
 
 class Login extends StatefulWidget {
@@ -164,6 +165,8 @@ class _LoginState extends State<Login> {
                                           }
                                           if (status == "1") {
                                             if(context.mounted){
+                                              final prefs = await SharedPreferences.getInstance();
+                                              prefs.setBool('isLoggedIn', true);
                                               Navigator.push( context, MaterialPageRoute(
                                                   builder: (context) => const ActiveVehiclesScreen()),
                                               );
