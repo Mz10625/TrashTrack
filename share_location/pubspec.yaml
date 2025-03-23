@@ -52,7 +52,7 @@ dependencies:
   geolocator: 13.0.1
 
   # QR code scanning
-  qr_code_scanner: 1.0.0
+#  qr_code_scanner: 1.0.0
   mobile_scanner: ^6.0.7
 #  image_picker: ^1.1.2
   permission_handler: ^10.2.0
