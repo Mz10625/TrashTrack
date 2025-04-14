@@ -46,6 +46,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:vehicle_tracker/screens/welcome_screen.dart';
 import 'package:vehicle_tracker/firebase_options.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(

@@ -12,7 +12,6 @@ class FirestoreService {
     return _vehiclesCollection.doc(vehicleNumber);
   }
 
-  // Check if vehicle exists in Firestore
   Future<bool> checkVehicleExists(String vehicleNumber) async {
     int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
 
