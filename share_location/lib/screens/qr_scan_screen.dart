@@ -260,13 +260,13 @@ class _QRScanScreenState extends State<QRScanScreen> {
                       margin: const EdgeInsets.all(50),
                     ),
                   if (isScanning)
-                    Positioned(
+                    const Positioned(
                       bottom: 20,
                       left: 0,
                       right: 0,
                       child: Center(
                         child: Text(
-                          'Position QR Code in Frame',
+                          'Position Vehicle QR Code in Frame',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.white,

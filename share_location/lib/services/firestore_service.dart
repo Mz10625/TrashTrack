@@ -2,13 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 
 class FirestoreService {
-  // final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final CollectionReference _vehiclesCollection = FirebaseFirestore.instance.collection('vehicles');
 
-  // Get vehicle document reference
   DocumentReference getVehicleDocRef(String vehicleNumber) {
-    int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
-
     return _vehiclesCollection.doc(vehicleNumber);
   }
 
@@ -23,7 +19,7 @@ class FirestoreService {
     return query.docs.isNotEmpty;
   }
 
-  // Get vehicle data
+
   Future<Map<String, dynamic>?> getVehicleData(String vehicleNumber) async {
     int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
 
@@ -39,7 +35,7 @@ class FirestoreService {
     return null;
   }
 
-  // Update vehicle status
+
   Future<void> updateVehicleStatus(String vehicleNumber, bool isActive) async {
     int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
 
@@ -57,7 +53,7 @@ class FirestoreService {
     }
   }
 
-  // Update vehicle location
+
   Future<void> updateVehicleLocation(String vehicleNumber, Position position) async {
     int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
 
@@ -78,7 +74,7 @@ class FirestoreService {
     }
   }
 
-  // Get all vehicles
+
   Future<List<Map<String, dynamic>>> getAllVehicles() async {
     var query = await _vehiclesCollection.get();
     return query.docs.map((doc) {

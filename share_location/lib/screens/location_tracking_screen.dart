@@ -22,7 +22,7 @@ Future<void> initializeBackgroundService() async {
       isForegroundMode: true,
       foregroundServiceNotificationId: 888,
       initialNotificationTitle: 'Location Tracking',
-      initialNotificationContent: 'Location tracking enabld in background',
+      initialNotificationContent: 'Location tracking enabled in background',
     ),
     iosConfiguration: IosConfiguration(
       autoStart: false,
@@ -83,12 +83,7 @@ void onStart(ServiceInstance service) async {
   positionStreamSubscription = Geolocator.getPositionStream(
     locationSettings: AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 10,
-      // foregroundNotificationConfig: ForegroundNotificationConfig(
-      //   notificationTitle: "Location Tracking",
-      //   notificationText: "Tracking your vehicle location",
-      //   enableWakeLock: true,
-      // ),
+      distanceFilter: 1,
     ),
   ).listen((Position position) async {
     try {
@@ -356,7 +351,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   }
 
   void _startLocationUpdateTimer() {
-    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (mounted) {
         print('updating in foreground mode...');
         var locationServiceEnabled = await _isLocationServiceEnabled();
@@ -417,7 +412,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Tracking Timeout'),
-        content: const Text('Location tracking has been automatically stopped after 3 hours.'),
+        content: const Text('Location tracking has been automatically stopped after 2 hours.'),
         actions: [
           TextButton(
             onPressed: () {
