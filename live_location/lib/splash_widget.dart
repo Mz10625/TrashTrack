@@ -69,11 +69,11 @@ class _SplashWidgetState extends State<SplashWidget> {
                         text:const TextSpan(
                           children: [
                             TextSpan(
-                              text: 'App',
+                              text: 'Trash',
                               style: TextStyle( fontSize: 30,fontWeight: FontWeight.bold,color: Colors.black87,),
                             ),
                             TextSpan(
-                              text: 'Name',
+                              text: 'Track',
                               style: TextStyle( fontSize: 30,fontWeight: FontWeight.bold,color: Color.fromARGB(
                                   255, 188, 60, 51)),
                             )

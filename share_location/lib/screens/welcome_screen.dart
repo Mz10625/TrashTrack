@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vehicle_tracker/screens/qr_scan_screen.dart';
+import 'package:vehicle_tracker/screens/location_tracking_screen.dart'; // Import the location tracking screen
+import 'package:shared_preferences/shared_preferences.dart'; // Import for persistent storage
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -8,13 +10,16 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  String vehicleNumber = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -27,20 +32,50 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     );
     _animationController.forward();
 
-    // Navigate to QR scan screen after 3 seconds
+    // Check if app was running in background
+    _checkAppState();
+  }
+
+  Future<void> _checkAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    vehicleNumber = prefs.getString('vehicleNumber') ?? '0';
+
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const QRScanScreen(),
-          ),
-        );
+        if (vehicleNumber == '0') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const QRScanScreen(),
+            ),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => LocationTrackingScreen(vehicleNumber: vehicleNumber),
+            ),
+          );
+        }
       }
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      // App is being terminated
+      _clearAppState();
+    }
+  }
+
+  Future<void> _clearAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('app_was_running', false);
+  }
+
+  @override
   void dispose() {
+    // Unregister the observer
+    WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
     super.dispose();
   }
@@ -73,7 +108,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Vehicle Tracker',
+                    'Trash Tracker',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,

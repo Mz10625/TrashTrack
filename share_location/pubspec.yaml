@@ -1,37 +1,9 @@
-#name: share_location
-#description: "A new Flutter project."
-#publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-#
-#version: 1.0.0+1
-#
-#environment:
-#  sdk: ^3.5.4
-#
-#dependencies:
-#  flutter:
-#    sdk: flutter
-#
-#  cupertino_icons: ^1.0.8
-#
-#dev_dependencies:
-#  flutter_test:
-#    sdk: flutter
-#
-#  flutter_lints: ^4.0.0
-#
-#flutter:
-#
-#  uses-material-design: true
-
 
 name: vehicle_tracker
 description: A vehicle location tracking application
 
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none'
 
-# Version
 version: 1.0.0+1
 
 environment:
@@ -51,10 +23,7 @@ dependencies:
   # Location tracking
   geolocator: 13.0.1
 
-  # QR code scanning
-#  qr_code_scanner: 1.0.0
   mobile_scanner: ^6.0.7
-#  image_picker: ^1.1.2
   permission_handler: ^10.2.0
 
   # Other utilities
@@ -66,10 +35,21 @@ dependencies:
   shared_preferences: 2.2.2
   shared_preferences_android: 2.2.1
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/icon/icon1.png"
+  adaptive_icon_foreground: "assets/icon/icon1.png"
+  #  adaptive_icon_background: "#5F8F3C"
+  remove_alpha_ios: true
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
@@ -84,3 +64,8 @@ flutter:
           weight: 300
         - asset: assets/fonts/Poppins-Medium.ttf
           weight: 500
+
+  assets:
+    - assets/icon/icon1.png
+
+

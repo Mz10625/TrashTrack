@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vehicle_tracker/screens/location_tracking_screen.dart';
 import 'package:vehicle_tracker/services/firestore_service.dart';
 
@@ -18,11 +19,22 @@ class _QRScanScreenState extends State<QRScanScreen> {
   bool isLoading = false;
   final MobileScannerController _scannerController = MobileScannerController();
   bool _torchEnabled = false;
+  late SharedPreferences pref;
+
+  @override
+  void initState() {
+    super.initState();
+    _initiaize();
+  }
 
   @override
   void dispose() {
     _scannerController.dispose();
     super.dispose();
+  }
+
+  void _initiaize() async {
+    pref = await SharedPreferences.getInstance();
   }
 
   void _onQRCodeDetected(BarcodeCapture capture) {
@@ -78,6 +90,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
       });
 
       if (exists) {
+        await pref.setString('vehicleNumber', vehicleNumber);
         if (mounted) {
           _showScanSuccessDialog();
         }

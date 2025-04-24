@@ -44,6 +44,28 @@ Future<String> signUp(String userEmail, String userPassword, String wardNumber) 
   }
 }
 
+Future<Map<String, dynamic>> fetchWards() async {
+  try {
+    final QuerySnapshot wardSnapshot = await FirebaseFirestore.instance
+        .collection('wards')
+        .get();
+
+    Map<String, dynamic> wardsMap = {};
+
+    for (var doc in wardSnapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final wardNo = data['number']?.toString() ?? doc.id;
+      final wardName = data['name'] ?? '';
+
+      wardsMap[wardNo] = wardName;
+    }
+
+    return wardsMap;
+  } catch (e) {
+    print('Error fetching wards: $e');
+    return {};
+  }
+}
 
 Future<Map<String, dynamic>> fetchCombinedData() async {
   FirebaseFirestore firestore = FirebaseFirestore.instance;

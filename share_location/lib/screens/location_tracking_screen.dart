@@ -213,12 +213,26 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
     }
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _locationUpdateTimer?.cancel();
-    super.dispose();
-  }
+  // Future<void> _performCleanup() async {
+  //   print('performing cleanup.....');
+  //   _locationUpdateTimer?.cancel();
+  //
+  //   _stopLocationTracking();
+  //
+  //
+  //   print('App is being terminated, cleanup performed...');
+  // }
+
+  // @override
+  // void dispose() {
+  //   print('dispose.............');
+  //   WidgetsBinding.instance.removeObserver(this);
+  //
+  //   _locationUpdateTimer?.cancel();
+  //   _stopLocationTracking();
+  //
+  //   super.dispose();
+  // }
 
   Future<bool> _isLocationServiceEnabled() async {
     bool serviceEnabled = await _locationService.checkLocationServicesEnabled();
@@ -398,7 +412,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('trackingStartTime');
+    await prefs.remove('vehicleNumber');
     await prefs.setBool('isInBackgroundMode', false);
+    await prefs.remove('vehicleNumber');
 
     setState(() {
       _isTrackingActive = false;
@@ -427,6 +443,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // if (state == AppLifecycleState.detached) {
+    //   _performCleanup();
+    // }
     if (_isTrackingActive) {
       if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
         _switchToBackgroundMode();
