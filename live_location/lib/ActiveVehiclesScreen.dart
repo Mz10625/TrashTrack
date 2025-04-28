@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:live_location/FeedbackScreen.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:live_location/login.dart';
 import 'package:live_location/map_screen.dart';
@@ -151,6 +152,17 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                     }
                         : null,
                     enabled: hasActiveVehicles,
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.feedback, color: primaryColor),
+                    title: const Text('Submit Feedback'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const FeedbackScreen()),
+                      );
+                    },
                   ),
                   const Divider(),
                 ],
