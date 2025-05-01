@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:live_location/AdminFeedbackScreen.dart';
 import 'package:live_location/FeedbackScreen.dart';
 import 'package:live_location/firebase_operations.dart';
 import 'package:live_location/login.dart';
@@ -107,7 +108,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                 children: [
                   UserAccountsDrawerHeader(
                     accountName: Text(
-                      currentUserData?['name'] ?? 'User',
+                      currentUserData?['role'] == 'admin' ? 'Admin' : 'User',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w500,
@@ -155,12 +156,16 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                   ),
                   ListTile(
                     leading: Icon(Icons.feedback, color: primaryColor),
-                    title: const Text('Submit Feedback'),
+                    title: Text(currentUserData?['role'] == 'admin' ? 'View Feedbacks' : 'Submit Feedback'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const FeedbackScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => currentUserData?['role'] == 'admin'
+                              ? const AdminFeedbackScreen()
+                              : const FeedbackScreen(),
+                        ),
                       );
                     },
                   ),

@@ -36,6 +36,7 @@ Future<String> signUp(String userEmail, String userPassword, String wardNumber) 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'email': userEmail,
         'ward_number': int.parse(wardNumber),
+        'role' : 'user'
       });
     }
     return "1";

@@ -262,6 +262,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.2"
+  flutter_dotenv:
+    dependency: "direct main"
+    description:
+      name: flutter_dotenv
+      sha256: b7c7be5cd9f6ef7a78429cabd2774d3c4af50e79cb2b7593e3d5d763ef95c61b
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.1"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -408,6 +416,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  mapmyindia_gl:
+    dependency: "direct main"
+    description:
+      name: mapmyindia_gl
+      sha256: "52756dab0966fa97dcb42501767b208001c7fdf64ea384c3116955e3179292c3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.2"
+  mapmyindia_gl_platform_interface:
+    dependency: transitive
+    description:
+      name: mapmyindia_gl_platform_interface
+      sha256: "6a19510ec1461c6a6556bc2beaecf61c7d94408670e604c56f235f50c7ef6ebc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.11.0"
   matcher:
     dependency: transitive
     description:

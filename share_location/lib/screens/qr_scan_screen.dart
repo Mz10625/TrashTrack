@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vehicle_tracker/screens/location_tracking_screen.dart';
-import 'package:vehicle_tracker/services/firestore_service.dart';
+import 'package:trash_track/screens/location_tracking_screen.dart';
+import 'package:trash_track/services/firestore_service.dart';
 
 class QRScanScreen extends StatefulWidget {
   const QRScanScreen({Key? key}) : super(key: key);

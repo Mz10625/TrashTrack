@@ -1,5 +1,5 @@
 
-name: vehicle_tracker
+name: trash_track
 description: A vehicle location tracking application
 
 publish_to: 'none'
@@ -34,6 +34,10 @@ dependencies:
   flutter_background_service_android: ^6.0.0
   shared_preferences: 2.2.2
   shared_preferences_android: 2.2.1
+  flutter_dotenv: ^5.2.1
+
+  mapmyindia_gl: ^0.3.2
+#  latlong2: 0.9.1
 
 
 dev_dependencies:
@@ -67,5 +71,8 @@ flutter:
 
   assets:
     - assets/icon/icon1.png
+    - assets/icon/logo.png
+    - assets/icon/destination.png
+    - assets/.env
 
 

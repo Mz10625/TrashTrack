@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vehicle_tracker/screens/qr_scan_screen.dart';
-import 'package:vehicle_tracker/screens/location_tracking_screen.dart'; // Import the location tracking screen
-import 'package:shared_preferences/shared_preferences.dart'; // Import for persistent storage
+import 'package:trash_track/screens/qr_scan_screen.dart';
+import 'package:trash_track/screens/location_tracking_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -108,7 +108,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Trash Tracker',
+                    'Trash Track',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,

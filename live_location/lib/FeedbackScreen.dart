@@ -18,7 +18,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   final user = FirebaseAuth.instance.currentUser;
   final _formKey = GlobalKey<FormState>();
 
-  // Feedback form fields
+
   String _feedbackType = 'Missed Collection';
   String _description = '';
   double _rating = 3.0;
@@ -27,7 +27,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   bool _isLoading = false;
   String? _wardNumber;
 
-  // Define the same color scheme from ActiveVehiclesScreen
+
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -273,7 +273,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
               const SizedBox(height: 20),
 
-              // Rating Slider (only for Rate Service type)
+
               if (_feedbackType == 'Rate Service') ...[
                 Text(
                   'Service Rating',
@@ -362,7 +362,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
               const SizedBox(height: 20),
 
-              // Image Upload Option (for Missed Collection and Waste Issue)
+
               if (_feedbackType == 'Missed Collection' || _feedbackType == 'Waste Issue') ...[
                 Text(
                   'Upload Photo (Optional)',

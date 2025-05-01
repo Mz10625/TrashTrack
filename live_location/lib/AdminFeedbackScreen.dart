@@ -242,7 +242,7 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'From: ${feedback['user_name']} (${feedback['user_email']})',
+                          'From: ${feedback['user_email']}',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey.shade700,

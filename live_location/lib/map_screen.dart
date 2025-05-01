@@ -241,7 +241,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
                   children: [
                     MapmyIndiaMap(
                       initialCameraPosition: CameraPosition(
-                      target: _currentLocation!,
+                        target: _currentLocation!,
                         zoom: 14.0,
                       ),
                       onMapCreated: (map) async {
