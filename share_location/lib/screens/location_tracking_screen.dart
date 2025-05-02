@@ -84,12 +84,12 @@ void onStart(ServiceInstance service) async {
   positionStreamSubscription = Geolocator.getPositionStream(
     locationSettings: AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 1,
+      distanceFilter: 20,
     ),
   ).listen((Position position) async {
     try {
       int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
-      print('*****************************************');
+      // print('*****************************************');
       var query = await vehiclesCollection
           .where('vehicle_no', isEqualTo: vehicleNum)
           .limit(1)

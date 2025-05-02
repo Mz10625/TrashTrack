@@ -6,15 +6,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
+// import 'dart:typed_data';
 import 'package:mapmyindia_gl/mapmyindia_gl.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:math' show Point, asin, atan2, cos, pi, sin, sqrt;
+import 'dart:math' show Point, atan2, cos, pi, sin, sqrt;
 
 class MapViewScreen extends StatefulWidget {
   final String vehicleNumber;
-  const MapViewScreen({Key? key, required this.vehicleNumber,}) : super(key: key);
+  const MapViewScreen({super.key, required this.vehicleNumber});
 
   @override
   _RouteFinderScreenState createState() => _RouteFinderScreenState();
@@ -43,7 +43,7 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
     super.initState();
     _initializeMapmyIndia();
     _checkLocationPermission();
-    _getAccessToken(); // Get OAuth token for API calls
+    _getAccessToken(); // OAuth token for API calls
   }
 
   void _initializeMapmyIndia() {
@@ -129,7 +129,7 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
         _statusMessage = "Source location set. Now add destinations by tapping on the map.";
       });
 
-      // Move camera to current location
+
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -178,7 +178,7 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
     try {
       _vehicleSubscription = FirebaseFirestore.instance
           .collection('vehicles')
-          .where('vehicle_no', isEqualTo: 3922)
+          .where('vehicle_no', isEqualTo: int.parse(widget.vehicleNumber))
           .snapshots()
           .listen((snapshot) async {
 
@@ -199,6 +199,12 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
           final double newLng = data['current_location'].longitude;
           final newLocation = LatLng(newLat, newLng);
 
+          bool significantChange = false;
+          if (_sourceLocation != null) {
+            double distance = _calculateDistance(_sourceLocation!, newLocation);
+            significantChange = distance > 0.05; // recalculate if moved more than 50m
+          }
+
           setState(() {
             _sourceLocation = newLocation;
           });
@@ -209,18 +215,24 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
               SymbolOptions(geometry: newLocation),
             );
             print('Location updated to $newLat, $newLng');
+
+            _mapController!.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: newLocation,
+                  zoom: 14.0,
+                ),
+              ),
+            );
+
+            if (_destinations.isNotEmpty && significantChange) {
+              print('Recalculating routes due to vehicle location change');
+              await _clearRoutes();
+              await _calculateRoutes();
+            }
           } else {
             print('Marker or map controller not initialized yet');
           }
-
-          // if (_routes.isNotEmpty && _lastLocationUpdate != null) {
-          //   double distance = _calculateDistance(_lastLocationUpdate!, newLocation);
-          //
-          //   if (distance > 0.05) {
-          //     _recalculateRoutesIfNeeded();
-          //   }
-          // }
-
         }
       }, onError: (error) {
         print('Error in Firestore listener: $error');
@@ -670,7 +682,7 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Optimal Route'),
+        title: const Text('Find Optimal Route'),
       ),
       body: Stack(
         children: [
@@ -680,11 +692,7 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
               zoom: 5.0,
             ),
             onMapCreated: _onMapCreated,
-            onMapClick: _onMapTap,
-
-            // myLocationEnabled: true,
-            // myLocationTrackingMode: MyLocationTrackingMode.TrackingGPS,
-            // compassEnabled: true,
+            onMapClick: _onMapTap
           ),
           Positioned(
             bottom: 0,
