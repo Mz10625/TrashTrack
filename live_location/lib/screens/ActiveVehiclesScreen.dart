@@ -1,12 +1,15 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:live_location/AdminFeedbackScreen.dart';
-import 'package:live_location/FeedbackScreen.dart';
-import 'package:live_location/firebase_operations.dart';
-import 'package:live_location/login.dart';
-import 'package:live_location/map_screen.dart';
+import 'package:live_location/screens/FeedbackScreen.dart';
+import 'package:live_location/screens/login.dart';
+import 'package:live_location/screens/map_screen.dart';
+import 'package:live_location/services/firebase_operations.dart';
+import 'package:live_location/services/notificationController.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class ActiveVehiclesScreen extends StatefulWidget {
   const ActiveVehiclesScreen({super.key});
@@ -22,6 +25,8 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
   bool isLoading = true;
   Map<String, dynamic>? currentUserData;
   bool hasActiveVehicles = false;
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  String? _token;
 
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
@@ -33,6 +38,9 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
   void initState() {
     super.initState();
     _setupRealTimeUpdates();
+
+    NotificationController.initializeNotificationListeners();
+    _initializeFCM();
   }
 
   void _setupRealTimeUpdates() async {
@@ -75,6 +83,148 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
       });
     }
   }
+
+
+  Future<void> _initializeFCM() async {
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      await _manageTokenEfficiently();
+
+      _setupMessageListeners();
+
+      FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+        if (message != null) {
+          print("App opened from terminated state via notification");
+          _handleNotificationPressed(message.data);
+        }
+      });
+    }
+  }
+
+  Future<void> _manageTokenEfficiently() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? newToken = await _messaging.getToken();
+      String? oldToken = prefs.getString('fcm_token');
+
+      if (newToken != null) {
+        setState(() {
+          _token = newToken;
+        });
+
+        if (newToken != oldToken) {
+          await prefs.setString('fcm_token', newToken);
+
+          User? currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser.uid)
+                .update({
+              'fcmToken': newToken,
+              'tokenUpdatedAt': FieldValue.serverTimestamp(),
+            });
+          }
+        } else {
+          print('FCM Token unchanged, skipping database update');
+        }
+      }
+
+      _messaging.onTokenRefresh.listen((refreshedToken) {
+        setState(() {
+          _token = refreshedToken;
+        });
+
+        _storeAndRegisterNewToken(refreshedToken);
+      });
+
+    } catch (e) {
+      print('Error managing FCM token: $e');
+    }
+  }
+
+  Future<void> _storeAndRegisterNewToken(String token) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('fcm_token', token);
+
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .update({
+          'fcmToken': token,
+          'tokenUpdatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error storing new token: $e');
+    }
+  }
+
+  void _setupMessageListeners() {
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: message.hashCode,
+            channelKey: 'vehicle_updates',
+            title: message.notification?.title ?? 'Vehicle Update',
+            body: message.notification?.body ?? 'A vehicle status has changed',
+            notificationLayout: NotificationLayout.Default,
+            icon: 'resource://drawable/notification_icon', // Add this line
+            largeIcon: 'resource://drawable/app_icon', // Optional, for large icon
+            payload: message.data.map((key, value) => MapEntry(key, value.toString())),
+          ),
+          actionButtons: [
+            NotificationActionButton(
+              key: 'VIEW_DETAILS',
+              label: 'View Details',
+            ),
+            NotificationActionButton(
+              key: 'DISMISS',
+              label: 'Dismiss',
+              isDangerousOption: true,
+            ),
+          ],
+        );
+      }
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print("Opened app from notification");
+      _handleNotificationPressed(message.data);
+    });
+  }
+
+  void _handleNotificationPressed(Map<String, dynamic> data) {
+    if (data.containsKey('vehicleId')) {
+      print('Navigating to vehicle details for: ${data['vehicleId']}');
+
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => VehicleDetailsScreen(vehicleId: data['vehicleId']),
+      //   ),
+      // );
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -400,7 +550,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                     dataRowHeight: 60,
                     columnSpacing: 20,
                     horizontalMargin: 16,
-                    headingRowColor: MaterialStateProperty.all(
+                    headingRowColor: WidgetStateProperty.all(
                       primaryColor.withOpacity(0.9),
                     ),
                     columns: const [
@@ -449,8 +599,8 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                       final isActive = vehicle['status'] == 'Active';
 
                       return DataRow(
-                        color: MaterialStateProperty.resolveWith<Color>(
-                              (Set<MaterialState> states) {
+                        color: WidgetStateProperty.resolveWith<Color>(
+                              (Set<WidgetState> states) {
                             return index % 2 == 0
                                 ? Colors.white
                                 : const Color(0xFFF8F9FA);
@@ -527,3 +677,4 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
     );
   }
 }
+

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:live_location/AdminFeedbackScreen.dart';
-import 'package:live_location/login.dart';
+import 'package:live_location/screens/AdminFeedbackScreen.dart';
+import 'package:live_location/screens/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashboardScreen extends StatefulWidget {

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:live_location/firebase_operations.dart';
+import 'package:live_location/services/firebase_operations.dart';
 import 'package:mapmyindia_gl/mapmyindia_gl.dart';
 
 class MapScreen extends StatefulWidget {

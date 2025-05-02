@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:live_location/firebase_operations.dart';
+import 'package:live_location/services/firebase_operations.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});

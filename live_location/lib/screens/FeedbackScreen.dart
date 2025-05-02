@@ -4,9 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:live_location/firebase_operations.dart';
 import 'package:cloudinary_sdk/cloudinary_sdk.dart';
-import 'package:live_location/cloudinary_config.dart';
+import 'package:live_location/services/cloudinary_config.dart';
+import 'package:live_location/services/firebase_operations.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:live_location/ActiveVehiclesScreen.dart';
-import 'package:live_location/AdminDashboardScreen.dart';
-import 'package:live_location/firebase_operations.dart';
+import 'package:live_location/screens/ActiveVehiclesScreen.dart';
+import 'package:live_location/services/firebase_operations.dart';
 import 'dart:async';
-
-import 'package:live_location/login.dart';
+import 'package:live_location/screens/AdminDashboardScreen.dart';
+import 'package:live_location/screens/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashWidget extends StatefulWidget {

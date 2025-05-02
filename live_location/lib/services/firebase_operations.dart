@@ -9,7 +9,13 @@ Future<String> login(String email, String password) async {
     );
     User? user = userCredential.user;
     if (user != null && user.emailVerified) {
-      return "1";
+      var currentUserData = await fetchCurrentUserData();
+      if(currentUserData['role'] == 'admin'){
+        return '2';
+      }
+      else{
+        return '1';
+      }
     }
     else if(user != null){
       await user.delete();
