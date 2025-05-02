@@ -2,10 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:live_location/firebase_operations.dart';
+import 'package:cloudinary_sdk/cloudinary_sdk.dart';
+import 'package:live_location/cloudinary_config.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -90,16 +91,30 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     if (_selectedImage == null) return null;
 
     try {
-      final fileName = '${user?.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('feedback_images')
-          .child(fileName);
+      final fileName = '${user?.uid}_${DateTime.now().millisecondsSinceEpoch}';
 
-      await ref.putFile(_selectedImage!);
-      return await ref.getDownloadURL();
+      final cloudinary = CloudinaryConfig().cloudinary;
+
+      CloudinaryResponse response = await cloudinary.uploadResource(
+        CloudinaryUploadResource(
+          filePath: _selectedImage!.path,
+          resourceType: CloudinaryResourceType.image,
+          folder: 'feedback_images',
+          fileName: fileName,
+          progressCallback: (count, total) {
+            debugPrint('Uploading image: $count/$total');
+          },
+        ),
+      );
+
+      if (response.isSuccessful) {
+        return response.secureUrl;
+      } else {
+        print("Error uploading to Cloudinary: ${response.error}");
+        return null;
+      }
     } catch (e) {
-      debugPrint("Error uploading image: $e");
+      print("Error uploading image: $e");
       return null;
     }
   }
@@ -480,7 +495,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 }
 
-
 class FeedbackHistoryScreen extends StatefulWidget {
   const FeedbackHistoryScreen({super.key});
 
@@ -746,8 +760,6 @@ class _FeedbackHistoryScreenState extends State<FeedbackHistoryScreen> {
     );
   }
 }
-
-
 
 class FeedbackDetailScreen extends StatelessWidget {
   final Map<String, dynamic> feedback;

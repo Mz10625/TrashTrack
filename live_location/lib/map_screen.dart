@@ -24,9 +24,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
   Completer<bool>? _settingsCompleter;
   Map<String, Symbol> vehicleMarkers = {};
 
-  // List<Map<String, dynamic>> vehicleLocations = [];
-  // static const platform = MethodChannel('com.example.location');
-
   @override
   void initState() {
     super.initState();

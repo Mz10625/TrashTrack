@@ -156,15 +156,13 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                   ),
                   ListTile(
                     leading: Icon(Icons.feedback, color: primaryColor),
-                    title: Text(currentUserData?['role'] == 'admin' ? 'View Feedbacks' : 'Submit Feedback'),
+                    title: Text('Submit Feedback'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => currentUserData?['role'] == 'admin'
-                              ? const AdminFeedbackScreen()
-                              : const FeedbackScreen(),
+                          builder: (context) => const FeedbackScreen(),
                         ),
                       );
                     },

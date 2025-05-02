@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:live_location/ActiveVehiclesScreen.dart';
+import 'package:live_location/AdminDashboardScreen.dart';
+import 'package:live_location/firebase_operations.dart';
 import 'dart:async';
 
 import 'package:live_location/login.dart';
@@ -14,10 +16,14 @@ class SplashWidget extends StatefulWidget {
 bool? isLoggedIn;
 
 class _SplashWidgetState extends State<SplashWidget> {
+  Map<String, dynamic>? currentUserData;
 
-  Future<void> loggedIn() async{
+  Future<void> loggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    if(isLoggedIn == true){
+      currentUserData = await fetchCurrentUserData();
+    }
   }
 
   @override
@@ -25,12 +31,9 @@ class _SplashWidgetState extends State<SplashWidget> {
     super.initState();
     loggedIn();
 
-    Timer(const Duration(seconds: 3),
-            ()=>Navigator.pushReplacement(context,
-            MaterialPageRoute(builder:
-                (context) => isLoggedIn! ? const ActiveVehiclesScreen() :const Login(),
-            )
-        )
+    Timer(
+        const Duration(seconds: 3),
+        ()=>Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => isLoggedIn! ? (currentUserData?['role'] == 'admin' ? const AdminDashboardScreen() : const ActiveVehiclesScreen()) :const Login(),))
     );
   }
 
