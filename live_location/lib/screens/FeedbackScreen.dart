@@ -18,8 +18,6 @@ class FeedbackScreen extends StatefulWidget {
 class _FeedbackScreenState extends State<FeedbackScreen> {
   final user = FirebaseAuth.instance.currentUser;
   final _formKey = GlobalKey<FormState>();
-
-
   String _feedbackType = 'Missed Collection';
   String _description = '';
   double _rating = 3.0;
@@ -27,7 +25,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   File? _selectedImage;
   bool _isLoading = false;
   String? _wardNumber;
-
 
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
@@ -155,7 +152,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             ),
           );
 
-          // Reset form
           setState(() {
             _description = '';
             _selectedImage = null;
@@ -617,7 +613,6 @@ class _FeedbackHistoryScreenState extends State<FeedbackHistoryScreen> {
             : DateTime.now();
         final String formattedDate = DateFormat('MMM dd, yyyy - hh:mm a').format(date);
 
-        // Determine status color
         Color statusColor = Colors.grey;
         if (feedback['status'] == 'Resolved') {
           statusColor = accentColor;
@@ -766,7 +761,6 @@ class FeedbackDetailScreen extends StatelessWidget {
 
   const FeedbackDetailScreen({super.key, required this.feedback});
 
-  // Define the same color scheme
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -779,7 +773,6 @@ class FeedbackDetailScreen extends StatelessWidget {
     final DateTime date = timestamp != null ? timestamp.toDate() : DateTime.now();
     final String formattedDate = DateFormat('MMMM dd, yyyy - hh:mm a').format(date);
 
-    // Determine status color
     Color statusColor = Colors.grey;
     if (feedback['status'] == 'Resolved') {
       statusColor = accentColor;
@@ -792,7 +785,7 @@ class FeedbackDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text('Feedback Details'),
+        title: const Text('Feedback Details'),
         elevation: 0,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
@@ -1015,7 +1008,6 @@ class FeedbackDetailScreen extends StatelessWidget {
               ),
             ],
 
-            // Admin Response (if available)
             if (feedback['admin_response'] != null) ...[
               const SizedBox(height: 20),
               Container(

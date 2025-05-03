@@ -1,0 +1,16 @@
+Technologies used :
+
+Flutter - Application framework 
+MapMyIndia API - Map view and routing
+Node.js - Backend server for listening to updates in database
+Firebase - Real time database
+Cloudinary - Image storage
+
+
+Key Features:
+
+Implemented Dijkstra's shortest path algorithm for finding optimal route for vehicle.
+Balanced resource usage using optimal time intervals (30 sec) and minimum distance (40 meters) for location updates.
+Node.js API for listening to updates in firebase and sending notifications to users.
+
+

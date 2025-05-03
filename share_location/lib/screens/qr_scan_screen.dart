@@ -297,64 +297,63 @@ class _QRScanScreenState extends State<QRScanScreen> {
                   style: TextStyle(fontSize: 18),
                 ),
               ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: isLoading ? null : () {
-                // For manual entry
-                _showManualEntryDialog();
-              },
-              child: const Text(
-                'Enter Vehicle Number Manually',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
+            // const SizedBox(height: 16),
+            // TextButton(
+            //   onPressed: isLoading ? null : () {
+            //     _showManualEntryDialog();
+            //   },
+            //   child: const Text(
+            //     'Enter Vehicle Number Manually',
+            //     style: TextStyle(fontSize: 16),
+            //   ),
+            // ),
           ],
         ),
       ),
     );
   }
 
-  void _showManualEntryDialog() {
-    String enteredVehicleNumber = '';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Enter Vehicle Number'),
-        content: TextField(
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(
-            hintText: 'e.g., 3908',
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (value) {
-            enteredVehicleNumber = value;
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('CANCEL'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (enteredVehicleNumber.isNotEmpty) {
-                Navigator.of(context).pop();
-                setState(() {
-                  scannedVehicleNumber = enteredVehicleNumber;
-                });
-                _pauseScanning();
-                _checkVehicleAndProceed(enteredVehicleNumber);
-              }
-            },
-            child: const Text('SUBMIT'),
-          ),
-        ],
-      ),
-    );
-  }
+  // void _showManualEntryDialog() {
+  //   String enteredVehicleNumber = '';
+  //
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('Enter Vehicle Number'),
+  //       content: TextField(
+  //         autofocus: true,
+  //         keyboardType: TextInputType.number,
+  //         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+  //         decoration: const InputDecoration(
+  //           hintText: 'e.g., 3908',
+  //           border: OutlineInputBorder(),
+  //         ),
+  //         onChanged: (value) {
+  //           enteredVehicleNumber = value;
+  //         },
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () {
+  //             Navigator.of(context).pop();
+  //           },
+  //           child: const Text('CANCEL'),
+  //         ),
+  //         FilledButton(
+  //           onPressed: () {
+  //             if (enteredVehicleNumber.isNotEmpty) {
+  //               Navigator.of(context).pop();
+  //               setState(() {
+  //                 scannedVehicleNumber = enteredVehicleNumber;
+  //               });
+  //               _pauseScanning();
+  //               _checkVehicleAndProceed(enteredVehicleNumber);
+  //             }
+  //           },
+  //           child: const Text('SUBMIT'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

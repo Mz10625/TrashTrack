@@ -84,7 +84,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
     }
   }
 
-
   Future<void> _initializeFCM() async {
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
@@ -106,7 +105,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
 
       FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
         if (message != null) {
-          print("App opened from terminated state via notification");
           _handleNotificationPressed(message.data);
         }
       });
@@ -137,8 +135,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
               'tokenUpdatedAt': FieldValue.serverTimestamp(),
             });
           }
-        } else {
-          print('FCM Token unchanged, skipping database update');
         }
       }
 
@@ -150,8 +146,9 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
         _storeAndRegisterNewToken(refreshedToken);
       });
 
-    } catch (e) {
-      print('Error managing FCM token: $e');
+    }
+    catch (e) {
+      print('Error managing FCM token');
     }
   }
 
@@ -170,8 +167,9 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
           'tokenUpdatedAt': FieldValue.serverTimestamp(),
         });
       }
-    } catch (e) {
-      print('Error storing new token: $e');
+    }
+    catch (e) {
+      print('Error storing new token');
     }
   }
 
@@ -186,8 +184,8 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
             title: message.notification?.title ?? 'Vehicle Update',
             body: message.notification?.body ?? 'A vehicle status has changed',
             notificationLayout: NotificationLayout.Default,
-            icon: 'resource://drawable/notification_icon', // Add this line
-            largeIcon: 'resource://drawable/app_icon', // Optional, for large icon
+            icon: 'resource://drawable/notification_icon',
+            largeIcon: 'resource://drawable/app_icon',
             payload: message.data.map((key, value) => MapEntry(key, value.toString())),
           ),
           actionButtons: [
@@ -206,15 +204,12 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print("Opened app from notification");
       _handleNotificationPressed(message.data);
     });
   }
 
   void _handleNotificationPressed(Map<String, dynamic> data) {
     if (data.containsKey('vehicleId')) {
-      print('Navigating to vehicle details for: ${data['vehicleId']}');
-
       // Navigator.push(
       //   context,
       //   MaterialPageRoute(
@@ -223,8 +218,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
       // );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +299,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                   ),
                   ListTile(
                     leading: Icon(Icons.feedback, color: primaryColor),
-                    title: Text('Submit Feedback'),
+                    title: const Text('Submit Feedback'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(

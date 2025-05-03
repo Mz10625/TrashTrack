@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -277,37 +276,3 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
     );
   }
 }
-
-
-// Future<void> startLocationUpdates() async {
-//   try {
-//     await platform.invokeMethod('startLocationUpdates');
-//     setState(() {
-//       _locationMessage = "Location updates started.";
-//     });
-//   } on PlatformException catch (e) {
-//     setState(() {
-//       _locationMessage = "Failed to start location updates: ${e.message}";
-//     });
-//   }
-//   print(_locationMessage);
-// }
-
-
-// try {
-// await platform.invokeMethod('getLastKnownLocation');
-// setState(() {
-// _locationMessage = "Location updates started.";
-// });
-// platform.setMethodCallHandler((call) async {
-// if (call.method == 'locationUpdate') {
-// final double latitude = call.arguments['latitude'];
-// final double longitude = call.arguments['longitude'];
-// print('Location update: Latitude: $latitude, Longitude: $longitude');
-// }
-// });
-// } on PlatformException catch (e) {
-// setState(() {
-// _locationMessage = "Failed to start location updates: ${e.message}";
-// });
-// }

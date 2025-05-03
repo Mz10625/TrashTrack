@@ -67,15 +67,14 @@ class MapViewScreenState extends State<MapViewScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _accessToken = data['access_token'];
-        print('OAuth token acquired successfully');
         // print(_accessToken);
       }
       else {
-        print('Failed to get OAuth token: ${response.body}');
+        print('failed to get token: ${response.body}');
       }
     }
     catch (e) {
-      print('Error getting OAuth token: $e');
+      print('error getting token: $e');
     }
   }
 
@@ -166,7 +165,7 @@ class MapViewScreenState extends State<MapViewScreen> {
       });
     }
     catch (e) {
-      print("Error adding marker: $e");
+      print("Error adding marker");
     }
   }
 
@@ -181,7 +180,7 @@ class MapViewScreenState extends State<MapViewScreen> {
           .listen((snapshot) async
       {
         if (snapshot.docs.isEmpty) {
-          print('No vehicle document found for ${widget.vehicleNumber}');
+          print('vehicle document not found for ${widget.vehicleNumber}');
           return;
         }
 
@@ -189,7 +188,7 @@ class MapViewScreenState extends State<MapViewScreen> {
           final data = doc.data();
 
           if (data['current_location'] == null) {
-            print('No location data found for vehicle ${widget.vehicleNumber}');
+            print('location data not found for vehicle ${widget.vehicleNumber}');
             continue;
           }
 
@@ -212,7 +211,6 @@ class MapViewScreenState extends State<MapViewScreen> {
               existingSourceMarker!,
               SymbolOptions(geometry: newLocation),
             );
-            print('Location updated to $newLat, $newLng');
 
             _mapController!.animateCamera(
               CameraUpdate.newCameraPosition(
@@ -224,13 +222,9 @@ class MapViewScreenState extends State<MapViewScreen> {
             );
 
             if (_destinations.isNotEmpty && significantChange) {
-              print('Recalculating routes due to vehicle location change');
               await _clearRoutes();
               await _calculateRoutes();
             }
-          }
-          else {
-            print('Marker or map controller not initialized yet');
           }
         }
       },
@@ -275,13 +269,13 @@ class MapViewScreenState extends State<MapViewScreen> {
     });
 
     try {
-      // Build a complete distance matrix between all points
+      // build distance matrix between all points
       final distanceMatrix = await _getDistanceMatrix();
 
-      // Find the optimal order to visit destinations using TSP approach
+      // find the optimal order to visit destinations
       final optimizedOrder = _findOptimalRoute(distanceMatrix);
 
-      // Get and draw actual road paths between consecutive points in the optimal order
+      // Get and draw actual road paths between points in the optimal order
       await _drawOptimalRoute(optimizedOrder);
 
       setState(() {
@@ -293,7 +287,7 @@ class MapViewScreenState extends State<MapViewScreen> {
         _isLoading = false;
         _statusMessage = "Error calculating routes: $e";
       });
-      print("Route calculation error: $e");
+      print("calculation error: $e");
     }
   }
 
@@ -341,7 +335,7 @@ class MapViewScreenState extends State<MapViewScreen> {
 
           final durations = data['results']['durations']; // Time matrix in seconds
 
-          // Fill the distance matrix with travel times (for time optimization)
+          // fill the distance matrix with travel times (for time optimization)
           for (int i = 0; i < allPoints.length; i++) {
             for (int j = 0; j < allPoints.length; j++) {
               if (i != j) {
@@ -356,7 +350,7 @@ class MapViewScreenState extends State<MapViewScreen> {
       } else {
         print('Distance Matrix API error: ${response.statusCode} - ${response.body}');
 
-        // Fallback to estimated distances if API fails
+        // use estimated distances if API fails
         for (int i = 0; i < allPoints.length; i++) {
           for (int j = 0; j < allPoints.length; j++) {
             if (i != j) {
@@ -368,7 +362,7 @@ class MapViewScreenState extends State<MapViewScreen> {
     }
     catch (e) {
       print('Error in _getDistanceMatrix: $e');
-      // Fallback to estimated distances
+      // use estimated distances
       for (int i = 0; i < allPoints.length; i++) {
         for (int j = 0; j < allPoints.length; j++) {
           if (i != j) {
@@ -381,9 +375,8 @@ class MapViewScreenState extends State<MapViewScreen> {
     return distanceMatrix;
   }
 
-  // Find optimal route order using greedy approach for TSP
   List<int> _findOptimalRoute(Map<String, Map<String, double>> distanceMatrix) {
-    int sourceIndex = 0; // Source is always at index 0
+    int sourceIndex = 0; // source is at index 0
     List<int> unvisited = List.generate(_destinations.length, (i) => i + 1);
     List<int> route = [sourceIndex];
 
@@ -453,24 +446,23 @@ class MapViewScreenState extends State<MapViewScreen> {
         if (data['routes'] != null && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
 
-          // Handle different geometry formats
+          // handle different geometry formats
           if (route['geometry'] != null) {
             if (route['geometry'] is String) {
-              // Decode polyline format
+              // decode polyline format
               routePoints = _decodePolyline(route['geometry']);
             } else if (route['geometry'] is Map && route['geometry']['coordinates'] != null) {
-              // Handle GeoJSON format
+              // handle GeoJSON format
               final List<dynamic> coordinates = route['geometry']['coordinates'];
 
               for (var coord in coordinates) {
                 if (coord is List && coord.length >= 2) {
-                  // MapMyIndia returns [longitude, latitude] format
                   routePoints.add(LatLng(coord[1].toDouble(), coord[0].toDouble()));
                 }
               }
             }
-          } else if (route['legs'] != null && route['legs'].isNotEmpty) {
-            // Try to extract coordinates from route legs if available
+          }
+          else if (route['legs'] != null && route['legs'].isNotEmpty) {
             for (var leg in route['legs']) {
               if (leg['steps'] != null) {
                 for (var step in leg['steps']) {
@@ -485,7 +477,7 @@ class MapViewScreenState extends State<MapViewScreen> {
 
           print('Extracted ${routePoints.length} route points');
 
-          // If still empty, fallback to straight line
+          // If empty, use straight line
           if (routePoints.isEmpty) {
             print('No route geometry found in API response, using fallback');
             routePoints = [start, end];
@@ -496,19 +488,17 @@ class MapViewScreenState extends State<MapViewScreen> {
         }
       } else {
         print('Direction API error: ${response.statusCode} - ${response.body}');
-        // Fallback: direct line if API fails
+        // use direct line if API fails
         routePoints = [start, end];
       }
-    } catch (e) {
+    }
+    catch (e) {
       print('Error in _getRouteBetweenPoints: $e');
-      // Fallback: direct line
       routePoints = [start, end];
     }
-
     return routePoints;
   }
 
-  // Decode polyline string to list of coordinates
   List<LatLng> _decodePolyline(String encoded) {
     List<LatLng> points = [];
     int index = 0, len = encoded.length;
@@ -571,7 +561,6 @@ class MapViewScreenState extends State<MapViewScreen> {
     }
   }
 
-  // Basic distance calculation (Haversine formula)
   double _calculateDistance(LatLng point1, LatLng point2) {
     const double earthRadius = 6371.0; // Earth radius in kilometers
 

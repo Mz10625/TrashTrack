@@ -10,7 +10,6 @@ import 'package:trash_track/services/location_service.dart';
 import 'package:trash_track/services/firestore_service.dart';
 import 'package:trash_track/widgets/countdown_timer.dart';
 import 'package:firebase_core/firebase_core.dart';
-
 import '../firebase_options.dart';
 
 Future<void> initializeBackgroundService() async {
@@ -99,8 +98,6 @@ void onStart(ServiceInstance service) async {
           'current_location': geoPoint,
           'last_updated': FieldValue.serverTimestamp(),
         });
-
-        // print('Background location updated for $vehicleNumber: ${position.latitude}, ${position.longitude}');
       }
 
       if (startTime != null && DateTime.now().difference(startTime).inHours >= trackingDurationHours) {
@@ -334,14 +331,14 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   void _startLocationUpdateTimer() {
     _locationUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (mounted) {
-        print('updating in foreground mode...');
         var locationServiceEnabled = await _isLocationServiceEnabled();
         if(!locationServiceEnabled){
           _stopLocationTracking();
           return;
         }
+        print('updating in foreground mode...');
         await _updateCurrentLocation();
-        if (_trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
+        if ( _trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
           _stopLocationTracking();
           _showTrackingTimeoutDialog();
         }
@@ -557,7 +554,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
                     title: const Text('About TrashTrack'),
                     content: const Text(
                       'This application allows you to share your vehicle\'s location in real-time. '
-                          'Enable location sharing to start tracking your vehicle.',
+                          'Enable location sharing to start sharing your location.',
                     ),
                     actions: [
                       TextButton(

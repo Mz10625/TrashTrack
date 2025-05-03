@@ -13,8 +13,6 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
   List<Map<String, dynamic>> allFeedback = [];
   bool isLoading = true;
   String statusFilter = 'All';
-
-
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -424,7 +422,6 @@ class FeedbackDetailScreen extends StatelessWidget {
 
   const FeedbackDetailScreen({super.key, required this.feedback});
 
-  // Define the same color scheme
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -437,7 +434,6 @@ class FeedbackDetailScreen extends StatelessWidget {
     final DateTime date = timestamp != null ? timestamp.toDate() : DateTime.now();
     final String formattedDate = DateFormat('MMMM dd, yyyy - hh:mm a').format(date);
 
-    // Determine status color
     Color statusColor = Colors.grey;
     if (feedback['status'] == 'Resolved') {
       statusColor = accentColor;
@@ -581,7 +577,6 @@ class FeedbackDetailScreen extends StatelessWidget {
               const SizedBox(height: 20),
             ],
 
-            // Description
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -619,7 +614,6 @@ class FeedbackDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-
 
             if (feedback['image_url'] != null) ...[
               const SizedBox(height: 20),

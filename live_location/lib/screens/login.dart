@@ -20,7 +20,6 @@ class _LoginState extends State<Login> {
   TextEditingController pass = TextEditingController();
   TextEditingController email = TextEditingController();
 
-  // Define a purple color palette
   final Color primaryPurple = const Color(0xFF6A1B9A);
   final Color lightPurple = const Color(0xFF9C27B0);
   final Color deepPurple = const Color(0xFF4A148C);
@@ -66,7 +65,6 @@ class _LoginState extends State<Login> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Animated App Icon/Logo with shadow
                             TweenAnimationBuilder(
                               tween: Tween<double>(begin: 0, end: 1),
                               duration: const Duration(milliseconds: 800),
@@ -130,7 +128,6 @@ class _LoginState extends State<Login> {
                       ),
                     ),
 
-                    // Login Form Section with improved spacing and elevation
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
@@ -157,7 +154,6 @@ class _LoginState extends State<Login> {
                               ),
                               const SizedBox(height: 36),
 
-                              // Email Field with improved styling
                               TextFormField(
                                 controller: email,
                                 keyboardType: TextInputType.emailAddress,
@@ -205,7 +201,6 @@ class _LoginState extends State<Login> {
                               ),
                               const SizedBox(height: 24),
 
-                              // Password Field with improved styling
                               TextFormField(
                                 controller: pass,
                                 obscureText: !_passwordVisible,
@@ -261,7 +256,7 @@ class _LoginState extends State<Login> {
                                 },
                               ),
 
-                              // Forgot Password Link with improved styling
+
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
@@ -288,7 +283,7 @@ class _LoginState extends State<Login> {
                               ),
                               const SizedBox(height: 30),
 
-                              // Login Button with gradient and animation
+
                               SizedBox(
                                 width: double.infinity,
                                 height: 58,
@@ -379,7 +374,6 @@ class _LoginState extends State<Login> {
 
                               const Spacer(),
 
-                              // Sign Up Link with improved styling
                               Container(
                                 alignment: Alignment.center,
                                 margin: const EdgeInsets.only(bottom: 10),

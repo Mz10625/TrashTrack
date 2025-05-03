@@ -79,7 +79,7 @@ class FirestoreService {
     var query = await _vehiclesCollection.get();
     return query.docs.map((doc) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-      data['id'] = doc.id; // Add document ID to the data
+      data['id'] = doc.id;
       return data;
     }).toList();
   }

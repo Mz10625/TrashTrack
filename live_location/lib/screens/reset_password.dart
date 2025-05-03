@@ -13,7 +13,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  // Define a consistent purple color palette to match the login screen
   final Color primaryPurple = const Color(0xFF6A1B9A);
   final Color lightPurple = const Color(0xFF9C27B0);
   final Color deepPurple = const Color(0xFF4A148C);
@@ -38,11 +37,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         if(mounted){
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
+              content: const Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 12),
-                  const Expanded(
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
                     child: Text(
                       'Password reset email sent! Check your inbox.',
                       style: TextStyle(fontSize: 15),
@@ -179,7 +178,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           ),
                           const SizedBox(height: 30.0),
 
-                          // Email field with improved styling
+
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -227,7 +226,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                           const SizedBox(height: 30.0),
 
-                          // Reset Password Button with gradient
                           SizedBox(
                             width: double.infinity,
                             height: 58,
@@ -262,12 +260,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                      : Row(
+                                      : const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.send, size: 20),
-                                      const SizedBox(width: 10),
-                                      const Text(
+                                      Icon(Icons.send, size: 20),
+                                      SizedBox(width: 10),
+                                      Text(
                                         'SEND RESET LINK',
                                         style: TextStyle(
                                           fontSize: 16.0,
@@ -284,7 +282,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                           const SizedBox(height: 20.0),
 
-                          // Back to Login button with subtle styling
+
                           TextButton.icon(
                             icon: Icon(Icons.arrow_back, size: 18, color: primaryPurple),
                             label: Text(
