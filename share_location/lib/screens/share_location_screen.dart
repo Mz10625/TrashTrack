@@ -36,6 +36,13 @@ Future<void> initializeBackgroundService() async {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   StreamSubscription<Position>? positionStreamSubscription;
+  final prefs = await SharedPreferences.getInstance();
+  final vehicleNumber = prefs.getString('vehicleNumber') ?? '';
+  final trackingStartTime = prefs.getString('trackingStartTime');
+  final trackingDurationHours = prefs.getInt('trackingDurationHours') ?? 2;
+  final isInBackgroundMode = prefs.getBool('isInBackgroundMode') ?? false;
+  DateTime? startTime;
+
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -51,30 +58,20 @@ void onStart(ServiceInstance service) async {
     });
   }
 
-  final prefs = await SharedPreferences.getInstance();
-  final vehicleNumber = prefs.getString('vehicleNumber') ?? '';
-  final trackingStartTime = prefs.getString('trackingStartTime');
-  final trackingDurationHours = prefs.getInt('trackingDurationHours') ?? 3;
-  final isInBackgroundMode = prefs.getBool('isInBackgroundMode') ?? false;
-
   if (!isInBackgroundMode) {
     service.stopSelf();
     return;
   }
 
-  DateTime? startTime;
-
   if (trackingStartTime != null) {
     startTime = DateTime.parse(trackingStartTime);
   }
 
-  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) {
+  if (!(await Geolocator.isLocationServiceEnabled())) {
     service.stopSelf();
     return;
   }
 
-  // Check location permissions
   LocationPermission permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
     service.stopSelf();
@@ -84,12 +81,11 @@ void onStart(ServiceInstance service) async {
   positionStreamSubscription = Geolocator.getPositionStream(
     locationSettings: AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 20,
+      distanceFilter: 40, // update location after every 40 meters
     ),
   ).listen((Position position) async {
     try {
       int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
-      // print('*****************************************');
       var query = await vehiclesCollection
           .where('vehicle_no', isEqualTo: vehicleNum)
           .limit(1)
@@ -104,7 +100,7 @@ void onStart(ServiceInstance service) async {
           'last_updated': FieldValue.serverTimestamp(),
         });
 
-        print('Background location updated for $vehicleNumber: ${position.latitude}, ${position.longitude}');
+        // print('Background location updated for $vehicleNumber: ${position.latitude}, ${position.longitude}');
       }
 
       if (startTime != null && DateTime.now().difference(startTime).inHours >= trackingDurationHours) {
@@ -112,7 +108,8 @@ void onStart(ServiceInstance service) async {
         positionStreamSubscription?.cancel();
         service.stopSelf();
       }
-    } catch (e) {
+    }
+    catch (e) {
       print('Error updating location in background: $e');
     }
   });
@@ -122,9 +119,9 @@ class LocationTrackingScreen extends StatefulWidget {
   final String vehicleNumber;
 
   const LocationTrackingScreen({
-    Key? key,
+    super.key,
     required this.vehicleNumber,
-  }) : super(key: key);
+  });
 
   @override
   State<LocationTrackingScreen> createState() => _LocationTrackingScreenState();
@@ -155,10 +152,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
 
   Future<void> _initializeScreen() async {
     await initializeBackgroundService();
-
     await _loadVehicleData();
     await _initLocationService();
-
 
     final prefs = await SharedPreferences.getInstance();
     _isInBackgroundMode = prefs.getBool('isInBackgroundMode') ?? false;
@@ -170,9 +165,11 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
         _isTrackingActive = true;
         _loadTrackingStartTime();
       });
-    } else if (isServiceRunning && !_isInBackgroundMode) {
+    }
+    else if (isServiceRunning && !_isInBackgroundMode) {
       _backgroundService.invoke('stopService');
-    } else if (_isTrackingActive && _isInBackgroundMode) {
+    }
+    else if (_isTrackingActive && _isInBackgroundMode) {
       _startBackgroundService();
     }
 
@@ -212,27 +209,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
         SnackBar(content: Text('Error loading vehicle data: $e')),
       );
     }
-  }
-
-  Future<void> _performCleanup() async {
-    print('performing cleanup.....');
-    _locationUpdateTimer?.cancel();
-
-    _stopLocationTracking();
-
-
-    print('App is being terminated, cleanup performed...');
-  }
-
-  @override
-  void dispose() {
-    print('dispose.............');
-    WidgetsBinding.instance.removeObserver(this);
-
-    _locationUpdateTimer?.cancel();
-    _stopLocationTracking();
-
-    super.dispose();
   }
 
   Future<bool> _isLocationServiceEnabled() async {
@@ -338,7 +314,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
       _trackingStartTime = DateTime.now();
     });
 
-    // Save tracking information to shared preferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('vehicleNumber', widget.vehicleNumber);
     await prefs.setString('trackingStartTime', _trackingStartTime!.toIso8601String());
@@ -346,19 +321,10 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
 
     await _updateCurrentLocation();
 
-    if (_determineIfBackgroundNeeded()) {
-      _isInBackgroundMode = true;
-      await prefs.setBool('isInBackgroundMode', true);
-      _startBackgroundService();
-    } else {
-      _isInBackgroundMode = false;
-      await prefs.setBool('isInBackgroundMode', false);
-      _startLocationUpdateTimer();
-    }
-  }
+    _isInBackgroundMode = false;
+    await prefs.setBool('isInBackgroundMode', false);
+    _startLocationUpdateTimer();
 
-  bool _determineIfBackgroundNeeded() {
-    return false;
   }
 
   void _startBackgroundService() async {
@@ -366,7 +332,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   }
 
   void _startLocationUpdateTimer() {
-    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 15), (timer) async {
+    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (mounted) {
         print('updating in foreground mode...');
         var locationServiceEnabled = await _isLocationServiceEnabled();
@@ -375,8 +341,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
           return;
         }
         await _updateCurrentLocation();
-        if (_trackingStartTime != null &&
-            DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
+        if (_trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
           _stopLocationTracking();
           _showTrackingTimeoutDialog();
         }
@@ -442,20 +407,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
     );
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      _performCleanup();
-    }
-    if (_isTrackingActive) {
-      if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-        _switchToBackgroundMode();
-      } else if (state == AppLifecycleState.resumed) {
-        _switchToForegroundMode();
-      }
-    }
-  }
-
   void _switchToBackgroundMode() async {
     if (_isTrackingActive && !_isInBackgroundMode) {
       _locationUpdateTimer?.cancel();
@@ -492,20 +443,24 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
     return 'Lat: ${location.latitude.toStringAsFixed(6)}° N, Lng: ${location.longitude.toStringAsFixed(6)}° E';
   }
 
-  // Navigate to the map view screen
   void _openMapView() {
     if (_currentPosition != null) {
-      // Navigator.of(context).pop();
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => MapViewScreen(vehicleNumber: widget.vehicleNumber),
         ),
       );
-    } else {
+    }
+    else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to open map. Location data not available.')),
       );
     }
+  }
+
+  Future<void> _performCleanup() async {
+    _locationUpdateTimer?.cancel();
+    _stopLocationTracking();
   }
 
   @override
@@ -581,23 +536,21 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
               leading: const Icon(Icons.home),
               title: const Text('Home'),
               onTap: () {
-                Navigator.of(context).pop(); // Close the drawer
+                Navigator.of(context).pop();
               },
             ),
-            // Only show map view option when tracking is active
-            // if (_isTrackingActive)
-              ListTile(
-                leading: const Icon(Icons.map),
-                title: const Text('Map View'),
-                onTap: _openMapView,
-                enabled: _isTrackingActive,
-              ),
+            ListTile(
+              leading: const Icon(Icons.map),
+              title: const Text('Map View'),
+              onTap: _openMapView,
+              enabled: _isTrackingActive,
+            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.info),
               title: const Text('About'),
               onTap: () {
-                Navigator.of(context).pop(); // Close the drawer
+                Navigator.of(context).pop();
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -804,5 +757,28 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
         ),
       ),
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      _performCleanup();
+    }
+    if (_isTrackingActive) {
+      if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+        _switchToBackgroundMode();
+      }
+      else if (state == AppLifecycleState.resumed) {
+        _switchToForegroundMode();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _locationUpdateTimer?.cancel();
+    _stopLocationTracking();
+    super.dispose();
   }
 }

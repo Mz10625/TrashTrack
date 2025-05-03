@@ -6,7 +6,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:ui' as ui;
-// import 'dart:typed_data';
 import 'package:mapmyindia_gl/mapmyindia_gl.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -17,11 +16,11 @@ class MapViewScreen extends StatefulWidget {
   const MapViewScreen({super.key, required this.vehicleNumber});
 
   @override
-  _RouteFinderScreenState createState() => _RouteFinderScreenState();
+  MapViewScreenState createState() => MapViewScreenState();
 
 }
 
-class _RouteFinderScreenState extends State<MapViewScreen> {
+class MapViewScreenState extends State<MapViewScreen> {
   MapmyIndiaMapController? _mapController;
   final List<Symbol> _markers = [];
   final List<Line> _routes = [];
@@ -32,11 +31,9 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
   String _accessToken = '';
   Symbol? existingSourceMarker;
   StreamSubscription<QuerySnapshot>? _vehicleSubscription;
-
   final String _mapMyIndiaApiKey = dotenv.env['REST_API_KEY']!;
   final String _mapMyIndiaClientId = dotenv.env['ATLAS_CLIENT_ID'] ?? '';
   final String _mapMyIndiaClientSecret = dotenv.env['ATLAS_CLIENT_SECRET'] ?? '';
-
 
   @override
   void initState() {
@@ -52,7 +49,6 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
     MapmyIndiaAccountManager.setAtlasClientId(_mapMyIndiaClientId);
     MapmyIndiaAccountManager.setAtlasClientSecret(_mapMyIndiaClientSecret);
   }
-
 
   Future<void> _getAccessToken() async {
     try {
@@ -72,11 +68,13 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
         final data = json.decode(response.body);
         _accessToken = data['access_token'];
         print('OAuth token acquired successfully');
-        print(_accessToken);
-      } else {
+        // print(_accessToken);
+      }
+      else {
         print('Failed to get OAuth token: ${response.body}');
       }
-    } catch (e) {
+    }
+    catch (e) {
       print('Error getting OAuth token: $e');
     }
   }
@@ -100,9 +98,7 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
     );
     ui.FrameInfo frameInfo = await codec.getNextFrame();
 
-    // Create a byte recorder to record the bytes of the resized image
     final byteData = await frameInfo.image.toByteData(format: ui.ImageByteFormat.png);
-
     return byteData!.buffer.asUint8List();
   }
 
@@ -138,7 +134,8 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
           ),
         ),
       );
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _isLoading = false;
         _statusMessage = "Error getting location: $e";
@@ -167,7 +164,8 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
           existingSourceMarker = symbol;
         }
       });
-    } catch (e) {
+    }
+    catch (e) {
       print("Error adding marker: $e");
     }
   }
@@ -180,8 +178,8 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
           .collection('vehicles')
           .where('vehicle_no', isEqualTo: int.parse(widget.vehicleNumber))
           .snapshots()
-          .listen((snapshot) async {
-
+          .listen((snapshot) async
+      {
         if (snapshot.docs.isEmpty) {
           print('No vehicle document found for ${widget.vehicleNumber}');
           return;
@@ -230,14 +228,17 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
               await _clearRoutes();
               await _calculateRoutes();
             }
-          } else {
+          }
+          else {
             print('Marker or map controller not initialized yet');
           }
         }
-      }, onError: (error) {
+      },
+      onError: (error) {
         print('Error in Firestore listener: $error');
       });
-    } catch (error) {
+    }
+    catch (error) {
       print('Error setting up vehicle listener: $error');
     }
   }
@@ -249,7 +250,8 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
         _addMarkerAtPosition(coordinates, isSource: true);
         _statusMessage = "Source location set. Now add destinations by tapping on the map.";
       });
-    } else {
+    }
+    else {
       setState(() {
         _destinations.add(coordinates);
         _addMarkerAtPosition(coordinates, index: _destinations.length);
@@ -295,12 +297,10 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
     }
   }
 
-  // Get the distance matrix between all points using MapMyIndia Distance Matrix API
   Future<Map<String, Map<String, double>>> _getDistanceMatrix() async {
     Map<String, Map<String, double>> distanceMatrix = {};
     List<LatLng> allPoints = [_sourceLocation!, ..._destinations];
 
-    // Initialize the matrix with placeholders
     for (int i = 0; i < allPoints.length; i++) {
       String key = "$i";
       distanceMatrix[key] = {};
@@ -314,14 +314,10 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
       }
     }
 
-    // Get actual road distances and travel times from MapMyIndia API
     try {
-      // Prepare coordinates in MapMyIndia format
-      List<String> coords = allPoints.map((point) =>
-      "${point.longitude},${point.latitude}"
-      ).toList();
 
-      // API request to Distance Matrix API
+      List<String> coords = allPoints.map((point) => "${point.longitude},${point.latitude}").toList();
+
       final url = 'https://apis.mapmyindia.com/advancedmaps/v1/$_mapMyIndiaApiKey/distance_matrix/driving';
 
       final response = await http.post(
@@ -369,7 +365,8 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
           }
         }
       }
-    } catch (e) {
+    }
+    catch (e) {
       print('Error in _getDistanceMatrix: $e');
       // Fallback to estimated distances
       for (int i = 0; i < allPoints.length; i++) {
@@ -407,22 +404,17 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
       if (nearest != null) {
         route.add(nearest);
         unvisited.remove(nearest);
-      } else {
-        break; // No reachable points left
+      }
+      else {
+        break;
       }
     }
-
-    // Add return to source for a complete circuit if needed
-    // route.add(sourceIndex);
-
     return route;
   }
 
-  // Get and draw actual road paths between points in the optimized order
   Future<void> _drawOptimalRoute(List<int> optimizedOrder) async {
     List<LatLng> allPoints = [_sourceLocation!, ..._destinations];
 
-    // For each segment in the optimized route
     for (int i = 0; i < optimizedOrder.length - 1; i++) {
       int fromIdx = optimizedOrder[i];
       int toIdx = optimizedOrder[i + 1];
@@ -430,27 +422,19 @@ class _RouteFinderScreenState extends State<MapViewScreen> {
       LatLng from = allPoints[fromIdx];
       LatLng to = allPoints[toIdx];
 
-      // Get actual road path for this segment
       List<LatLng> routePoints = await _getRouteBetweenPoints(from, to);
 
-      // Draw this segment on the map
       if (routePoints.isNotEmpty) {
         await _drawRoute(routePoints);
       }
     }
   }
 
-  // Get actual road path between two points using MapMyIndia Routing API
   Future<List<LatLng>> _getRouteBetweenPoints(LatLng start, LatLng end) async {
     List<LatLng> routePoints = [];
 
     try {
-      // Updated URL format for the MapMyIndia/Mappls API
-      // Using route_adv endpoint which is more feature-rich
-      final url = 'https://apis.mappls.com/advancedmaps/v1/$_mapMyIndiaApiKey/route_adv/driving/' +
-          '${start.longitude},${start.latitude};${end.longitude},${end.latitude}?' +
-          'geometries=polyline&rtype=0&steps=false&exclude=ferry&region=IND&' +
-          'alternatives=1&overview=simplified';
+      final url = 'https://apis.mappls.com/advancedmaps/v1/$_mapMyIndiaApiKey/route_adv/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=polyline&rtype=0&steps=false&exclude=ferry&region=IND&alternatives=1&overview=simplified';
 
       print('Route API URL: $url');
 

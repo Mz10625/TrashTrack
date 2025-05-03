@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trash_track/screens/qr_scan_screen.dart';
-import 'package:trash_track/screens/location_tracking_screen.dart';
+import 'package:trash_track/screens/share_location_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -31,8 +31,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
       ),
     );
     _animationController.forward();
-
-    // Check if app was running in background
     _checkAppState();
   }
 
@@ -62,7 +60,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
-      // App is being terminated
       _clearAppState();
     }
   }
@@ -74,7 +71,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
 
   @override
   void dispose() {
-    // Unregister the observer
     WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
     super.dispose();
