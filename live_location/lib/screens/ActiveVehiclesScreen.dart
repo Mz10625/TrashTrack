@@ -418,7 +418,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                     : _buildVehiclesTable(),
               ),
 
-              // View Location Button
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,

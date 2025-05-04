@@ -16,8 +16,7 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-
-app.listen(process.env.PORT || 3000, () => {
+app.listen(process.env.PORT || 5000,'0.0.0.0', () => {
   console.log(`Server is running on port ${process.env.PORT || 3000}`);
   
   const vehiclesRef = db.collection('vehicles');
@@ -35,7 +34,7 @@ app.listen(process.env.PORT || 3000, () => {
         if (previousStatus === 'Inactive' && vehicleData.status === 'Active') {
           
           const wardNumber = vehicleData.ward_no;
-          // console.log(`Vehicle ${change.doc.id} in ward ${wardNumber} changed from Inactive to Active`);
+          console.log(`Vehicle ${change.doc.id} in ward ${wardNumber} changed from Inactive to Active`);
           
           await notifyUsersInWard(wardNumber, change.doc.id, vehicleData);
         }
@@ -89,7 +88,7 @@ async function notifyUsersInWard(wardNumber, vehicleId, vehicleData) {
     };
     
     const batchResponse = await sendNotificationsInBatches(tokens, message);
-    // console.log(`Successfully sent ${batchResponse.successCount} notifications out of ${tokens.length}`);
+    console.log(`Successfully sent ${batchResponse.successCount} notifications out of ${tokens.length}`);
     
     if (batchResponse.failedTokens.length > 0) {
       await handleFailedTokens(batchResponse.failedTokens);
@@ -101,10 +100,9 @@ async function notifyUsersInWard(wardNumber, vehicleId, vehicleData) {
 
 // send notifications in batches (FCM has a limit of 500 recipients per request)
 async function sendNotificationsInBatches(tokens, messageData) {
-  const batchSize = 500; // FCM maximum batch size
+  const batchSize = 500;
   const batches = [];
   
-  // Split tokens into batches
   for (let i = 0; i < tokens.length; i += batchSize) {
     batches.push(tokens.slice(i, i + batchSize));
   }
@@ -154,7 +152,7 @@ async function handleFailedTokens(failedTokens) {
       if (!userSnapshot.empty) {
         userSnapshot.forEach(async doc => {
           await db.collection('users').doc(doc.id).update({
-            fcmToken: admin.firestore.FieldValue.delete() // or mark as invalid
+            fcmToken: admin.firestore.FieldValue.delete()
           });
           console.log(`Removed invalid FCM token for user ${doc.id}`);
         });

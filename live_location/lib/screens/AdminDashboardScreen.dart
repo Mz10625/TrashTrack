@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:live_location/screens/AdminFeedbackScreen.dart';
+import 'package:live_location/screens/admin_routes_manager.dart';
 import 'package:live_location/screens/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -177,6 +178,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   title: const Text('Dashboard'),
                   onTap: () {
                     Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.route, color: primaryColor),
+                  title: const Text('Manage Veicle Routes'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminRoutesScreen()
+                      ),
+                    );
                   },
                 ),
                 ListTile(

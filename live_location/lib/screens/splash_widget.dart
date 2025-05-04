@@ -32,7 +32,7 @@ class _SplashWidgetState extends State<SplashWidget> {
 
     Timer(
         const Duration(seconds: 3),
-        ()=>Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => isLoggedIn! ? (currentUserData?['role'] == 'admin' ? const AdminDashboardScreen() : const ActiveVehiclesScreen()) :const Login(),))
+        ()=>Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => isLoggedIn! ? (currentUserData?['role'] == 'admin' ? const AdminDashboardScreen() : const ActiveVehiclesScreen()) :const Login()))
     );
   }
 
