@@ -73,7 +73,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
           isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
+          SnackBar(content: Text('Error loading data')),
         );
       }
     }
@@ -227,7 +227,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                         );
                       }
                     } catch (e) {
-                      debugPrint("Error signing out: $e");
+                      debugPrint("Error signing out");
                     }
                   },
                 ),
@@ -636,11 +636,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     final isEditing = vehicle != null;
     final vehicleNoController = TextEditingController(text: isEditing ? vehicle['vehicle_no'].toString() : '');
     final wardNoController = TextEditingController(text: isEditing ? vehicle['ward_no'].toString() : '');
-    String selectedStatus = isEditing ? vehicle['status'] : 'Inactive';
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(
           isEditing ? 'Edit Vehicle' : 'Add New Vehicle',
           style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
@@ -688,31 +687,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: selectedStatus,
-                decoration: InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.check_circle),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Active', child: Text('Active')),
-                  DropdownMenuItem(value: 'Inactive', child: Text('Inactive')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    selectedStatus = value;
-                  }
-                },
-              ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
           ),
           ElevatedButton(
@@ -722,7 +702,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             ),
             onPressed: () async {
               if (vehicleNoController.text.trim().isEmpty || wardNoController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(content: Text('Please fill all fields')),
                 );
                 return;
@@ -732,28 +712,37 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 setState(() {
                   isLoading = true;
                 });
-                Navigator.pop(context);
+
+                final newVehicleNo = int.parse(vehicleNoController.text.trim());
+                final newWardNo = int.parse(wardNoController.text.trim());
+
+                Navigator.pop(dialogContext);
 
                 if (isEditing) {
                   await FirebaseFirestore.instance
                       .collection('vehicles')
                       .doc(vehicle['id'])
                       .update({
-                    'vehicle_no': int.parse(vehicleNoController.text.trim()),
-                    'ward_no': int.parse(wardNoController.text.trim()),
-                    'status': selectedStatus,
+                    'vehicle_no': newVehicleNo,
+                    'ward_no': newWardNo,
                   });
-                } else {
+                }
+                else {
                   await FirebaseFirestore.instance.collection('vehicles').add({
-                    'vehicle_no': int.parse(vehicleNoController.text.trim()),
-                    'ward_no': int.parse(wardNoController.text.trim()),
-                    'status': selectedStatus,
-                    'current_location' : const GeoPoint(0,0)
+                    'vehicle_no': newVehicleNo,
+                    'ward_no': newWardNo,
+                    'status': 'Inactive',
+                    'current_location': const GeoPoint(0, 0)
                   });
                 }
 
-                fetchData();
-                if (mounted) {
+                await fetchData();
+
+                setState(() {
+                  isLoading = false;
+                });
+
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(isEditing ? 'Vehicle updated successfully' : 'Vehicle added successfully'),
@@ -762,12 +751,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                   );
                 }
               } catch (e) {
+                print('Error managing vehicle: $e');
                 setState(() {
                   isLoading = false;
                 });
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
+                    SnackBar(
+                      content: Text('Error: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
@@ -781,12 +774,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
 
   void _showWardDialog({Map<String, dynamic>? ward}) {
     final isEditing = ward != null;
-    final wardNoController = TextEditingController(text: isEditing ? ward['ward_no'] : '');
+    final wardNoController = TextEditingController(text: isEditing ? ward['ward_no'].toString() : '');
     final wardNameController = TextEditingController(text: isEditing ? ward['ward_name'] : '');
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(
           isEditing ? 'Edit Ward' : 'Add New Ward',
           style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
@@ -826,7 +819,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
           ),
           ElevatedButton(
@@ -836,7 +829,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
             ),
             onPressed: () async {
               if (wardNoController.text.trim().isEmpty || wardNameController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(content: Text('Please fill all fields')),
                 );
                 return;
@@ -846,41 +839,70 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
                 setState(() {
                   isLoading = true;
                 });
-                Navigator.pop(context);
+
+                final newWardNo = int.parse(wardNoController.text.trim());
+                final newWardName = wardNameController.text.trim();
+
+                Navigator.pop(dialogContext);
 
                 if (isEditing) {
-                  // Update existing ward
                   await FirebaseFirestore.instance
                       .collection('wards')
                       .doc(ward['id'])
                       .update({
-                    'ward_no': wardNoController.text.trim(),
-                    'ward_name': wardNameController.text.trim(),
+                    'number': newWardNo,
+                    'name': newWardName,
                   });
-                } else {
-                  // Add new ward
+
+                  final QuerySnapshot snapshot = await FirebaseFirestore.instance
+                      .collection('vehicles')
+                      .where('ward_no', isEqualTo: ward['ward_no'])
+                      .get();
+                  final WriteBatch batch = FirebaseFirestore.instance.batch();
+
+                  for (final doc in snapshot.docs) {
+                    batch.update(doc.reference, {
+                      'ward_no': newWardNo,
+                    });
+                  }
+
+                  await batch.commit();
+                }
+                else {
                   await FirebaseFirestore.instance.collection('wards').add({
-                    'ward_no': wardNoController.text.trim(),
-                    'ward_name': wardNameController.text.trim(),
+                    'number': newWardNo,
+                    'name': newWardName,
                   });
                 }
 
-                fetchData();
-                if (mounted) {
+                await fetchData();
+
+                setState(() {
+                  isLoading = false;
+                });
+
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(isEditing ? 'Ward updated successfully' : 'Ward added successfully'),
+                      content: Text(isEditing
+                          ? 'Ward updated successfully.'
+                          : 'Ward added successfully'),
                       backgroundColor: accentColor,
                     ),
                   );
                 }
-              } catch (e) {
+              }
+              catch (e) {
+                print('Error updating ward');
                 setState(() {
                   isLoading = false;
                 });
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
+                    SnackBar(
+                      content: Text('Error: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }

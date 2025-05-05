@@ -79,7 +79,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     } catch (e) {
       debugPrint("Error picking image: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to select image: $e')),
+        const SnackBar(content: Text('Failed to select image')),
       );
     }
   }

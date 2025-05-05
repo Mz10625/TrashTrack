@@ -376,7 +376,7 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
     List<LatLng> routePoints = [];
 
     try {
-      final url = 'https://apis.mappls.com/advancedmaps/v1/${dotenv.env['REST_API_KEY']}/route_adv/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=polyline&rtype=0&steps=false&exclude=ferry&region=IND&alternatives=1&overview=simplified';
+      final url = 'https://apis.mappls.com/advancedmaps/v1/${dotenv.env['REST_API_KEY']}/route_eta/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=polyline&rtype=0&steps=false&exclude=ferry&region=IND&alternatives=1&overview=simplified';
 
       final response = await http.get(
         Uri.parse(url),
@@ -587,7 +587,6 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
   }
 
   void _initializeMap() {
-    _loadMapIcons();
     if (_mapController != null) {
       if(_sourceMarker == null && _sourceLocation != null){
         _addSourceMarker(_sourceLocation!);
@@ -624,6 +623,7 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
                 });
                 _initializeMap();
               },
+              onStyleLoadedCallback: _loadMapIcons,
               onMapClick: _onMapTap
           ),
           Positioned(

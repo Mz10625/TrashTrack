@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:live_location/screens/routes_map_screen.dart';
 import 'package:live_location/services/location_service.dart';
@@ -72,7 +71,7 @@ class _AdminRoutesScreenState extends State<AdminRoutesScreen> {
           isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
+          SnackBar(content: Text('Error loading data')),
         );
       }
     }
@@ -128,8 +127,7 @@ class _AdminRoutesScreenState extends State<AdminRoutesScreen> {
   }
 
   void _editExistingRoute() {
-    final existingRoute = routes.firstWhere(
-          (route) => route['vehicle_id'] == selectedVehicle!['id'],
+    final existingRoute = routes.firstWhere((route) => route['vehicle_id'] == selectedVehicle!['id'],
       orElse: () => <String, dynamic>{},
     );
 

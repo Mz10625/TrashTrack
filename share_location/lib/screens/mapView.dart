@@ -48,6 +48,41 @@ class MapViewScreenState extends State<MapViewScreen> {
     _getAccessToken();
   }
 
+  void _initializeMapMyIndia() {
+    MapmyIndiaAccountManager.setMapSDKKey(_mapMyIndiaApiKey);
+    MapmyIndiaAccountManager.setRestAPIKey(_mapMyIndiaApiKey);
+    MapmyIndiaAccountManager.setAtlasClientId(_mapMyIndiaClientId);
+    MapmyIndiaAccountManager.setAtlasClientSecret(_mapMyIndiaClientSecret);
+  }
+
+  Future<void> _getAccessToken() async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://outpost.mapmyindia.com/api/security/oauth/token'),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'grant_type': 'client_credentials',
+          'client_id': _mapMyIndiaClientId,
+          'client_secret': _mapMyIndiaClientSecret,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        _accessToken = data['access_token'];
+        // print(_accessToken);
+      }
+      else {
+        print('failed to get token: ${response.body}');
+      }
+    }
+    catch (e) {
+      print('error getting token: $e');
+    }
+  }
+
   Future<void> _fetchVehicleRouteData() async {
     setState(() {
       _isLoading = true;
@@ -116,7 +151,7 @@ class MapViewScreenState extends State<MapViewScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _statusMessage = "Error loading route: $e";
+        _statusMessage = "Error loading route";
       });
       print("Error fetching route data: $e");
     }
@@ -144,41 +179,6 @@ class MapViewScreenState extends State<MapViewScreen> {
         ),
       ),
     );
-  }
-
-  void _initializeMapMyIndia() {
-    MapmyIndiaAccountManager.setMapSDKKey(_mapMyIndiaApiKey);
-    MapmyIndiaAccountManager.setRestAPIKey(_mapMyIndiaApiKey);
-    MapmyIndiaAccountManager.setAtlasClientId(_mapMyIndiaClientId);
-    MapmyIndiaAccountManager.setAtlasClientSecret(_mapMyIndiaClientSecret);
-  }
-
-  Future<void> _getAccessToken() async {
-    try {
-      final response = await http.post(
-        Uri.parse('https://outpost.mapmyindia.com/api/security/oauth/token'),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: {
-          'grant_type': 'client_credentials',
-          'client_id': _mapMyIndiaClientId,
-          'client_secret': _mapMyIndiaClientSecret,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        _accessToken = data['access_token'];
-        // print(_accessToken);
-      }
-      else {
-        print('failed to get token: ${response.body}');
-      }
-    }
-    catch (e) {
-      print('error getting token: $e');
-    }
   }
 
   Future<void> _checkLocationPermission() async {
@@ -263,10 +263,12 @@ class MapViewScreenState extends State<MapViewScreen> {
       if (isCurrentLocation) {
         iconImage = _currentLocationImageId;
         textField = "Current Location";
-      } else if (isSource) {
+      }
+      else if (isSource) {
         iconImage = _sourceImageId;
         textField = "Route Start";
-      } else {
+      }
+      else {
         iconImage = _destinationImageId;
         textField = index != null ? "$index" : "";
       }
@@ -321,11 +323,11 @@ class MapViewScreenState extends State<MapViewScreen> {
           final double newLng = data['current_location'].longitude;
           final newLocation = LatLng(newLat, newLng);
 
-          bool significantChange = false;
-          if (_currentDeviceLocation != null) {
-            double distance = _calculateDistance(_currentDeviceLocation!, newLocation);
-            significantChange = distance > 0.05; // recalculate if moved more than 50m
-          }
+          // bool significantChange = false;
+          // if (_currentDeviceLocation != null) {
+          //   double distance = _calculateDistance(_currentDeviceLocation!, newLocation);
+          //   significantChange = distance > 0.05; // recalculate if moved more than 50m
+          // }
 
           setState(() {
             _currentDeviceLocation = newLocation;
@@ -346,7 +348,7 @@ class MapViewScreenState extends State<MapViewScreen> {
             //   ),
             // );
 
-            if (_destinations.isNotEmpty && significantChange) {
+            if (_destinations.isNotEmpty) {
               await _clearRoutes();
               await _calculateRoutes();
             }
@@ -422,10 +424,11 @@ class MapViewScreenState extends State<MapViewScreen> {
         _isLoading = false;
         _statusMessage = "Routes calculated successfully";
       });
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _isLoading = false;
-        _statusMessage = "Error calculating routes: $e";
+        _statusMessage = "Error calculating routes";
       });
       print("calculation error: $e");
     }
@@ -499,9 +502,7 @@ class MapViewScreenState extends State<MapViewScreen> {
     List<LatLng> routePoints = [];
 
     try {
-      final url = 'https://apis.mappls.com/advancedmaps/v1/$_mapMyIndiaApiKey/route_adv/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=polyline&rtype=0&steps=false&exclude=ferry&region=IND&alternatives=1&overview=simplified';
-
-      print('Route API URL: $url');
+      final url = 'https://apis.mappls.com/advancedmaps/v1/$_mapMyIndiaApiKey/route_eta/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=polyline&rtype=0&steps=false&exclude=ferry&region=IND&alternatives=1&overview=simplified';
 
       final response = await http.get(
         Uri.parse(url),
@@ -513,7 +514,6 @@ class MapViewScreenState extends State<MapViewScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Route API response: $data');
 
         if (data['routes'] != null && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
@@ -547,20 +547,16 @@ class MapViewScreenState extends State<MapViewScreen> {
             }
           }
 
-          print('Extracted ${routePoints.length} route points');
-
           // If empty, use straight line
           if (routePoints.isEmpty) {
-            print('No route geometry found in API response, using fallback');
             routePoints = [start, end];
           }
-        } else {
-          print('No routes in API response');
+        }
+        else {
           routePoints = [start, end];
         }
-      } else {
-        print('Direction API error: ${response.statusCode} - ${response.body}');
-        // use direct line if API fails
+      }
+      else {
         routePoints = [start, end];
       }
     }
@@ -607,7 +603,8 @@ class MapViewScreenState extends State<MapViewScreen> {
         double longitude = lng / 1E5;
         points.add(LatLng(latitude, longitude));
       }
-    } catch (e) {
+    }
+    catch (e) {
       print('Error decoding polyline: $e');
     }
 
@@ -628,7 +625,8 @@ class MapViewScreenState extends State<MapViewScreen> {
       setState(() {
         _routes.add(line);
       });
-    } catch (e) {
+    }
+    catch (e) {
       print("Error drawing route: $e");
     }
   }
@@ -664,11 +662,9 @@ class MapViewScreenState extends State<MapViewScreen> {
   void _onMapCreated(MapmyIndiaMapController controller) async {
     _mapController = controller;
 
-    await _loadMapIcons();
     await _checkLocationPermission();
     await _fetchVehicleRouteData();
 
-    print('map  init............');
     if (_isExistingRouteLoaded && _currentDeviceLocation != null && !_existingRoutesDisplayed) {
       _drawExistingRoute();
     }
@@ -708,6 +704,7 @@ class MapViewScreenState extends State<MapViewScreen> {
                 zoom: 5.0,
               ),
               onMapCreated: _onMapCreated,
+              onStyleLoadedCallback: _loadMapIcons,
               onMapClick: _onMapTap
           ),
           Positioned(

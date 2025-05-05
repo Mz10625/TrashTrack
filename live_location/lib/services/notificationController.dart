@@ -21,15 +21,13 @@ class NotificationController {
 
   /// method to detect every time that a new notification is displayed
   @pragma('vm:entry-point')
-  static Future<void> onNotificationDisplayedMethod(
-      ReceivedNotification receivedNotification) async {
+  static Future<void> onNotificationDisplayedMethod(ReceivedNotification receivedNotification) async {
     debugPrint('Notification displayed: ${receivedNotification.toMap().toString()}');
   }
 
   /// method to detect if the user dismissed a notification
   @pragma('vm:entry-point')
-  static Future<void> onDismissActionReceivedMethod(
-      ReceivedAction receivedAction) async {
+  static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
     debugPrint('Notification dismissed: ${receivedAction.toMap().toString()}');
   }
 
