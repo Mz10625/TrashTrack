@@ -17,7 +17,6 @@ class MapViewScreen extends StatefulWidget {
 
   @override
   MapViewScreenState createState() => MapViewScreenState();
-
 }
 
 class MapViewScreenState extends State<MapViewScreen> {
@@ -25,25 +24,129 @@ class MapViewScreenState extends State<MapViewScreen> {
   final List<Symbol> _markers = [];
   final List<Line> _routes = [];
   final List<LatLng> _destinations = [];
-  LatLng? _sourceLocation;
+  LatLng? _currentDeviceLocation;
   bool _isLoading = false;
-  String _statusMessage = "Select source and destinations";
+  bool _existingRoutesDisplayed = false;
+  String _statusMessage = "Calculating optimal routes...";
   String _accessToken = '';
-  Symbol? existingSourceMarker;
+  Symbol? _currentLocationMarker;
   StreamSubscription<QuerySnapshot>? _vehicleSubscription;
   final String _mapMyIndiaApiKey = dotenv.env['REST_API_KEY']!;
   final String _mapMyIndiaClientId = dotenv.env['ATLAS_CLIENT_ID'] ?? '';
   final String _mapMyIndiaClientSecret = dotenv.env['ATLAS_CLIENT_SECRET'] ?? '';
+  String? _routeName;
+  final List<LatLng> _storedWaypoints = [];
+  bool _isExistingRouteLoaded = false;
+  final String _sourceImageId = "marker-source";
+  final String _currentLocationImageId = "marker-current";
+  final String _destinationImageId = "marker-destination";
 
   @override
   void initState() {
     super.initState();
-    _initializeMapmyIndia();
-    _checkLocationPermission();
-    _getAccessToken(); // OAuth token for API calls
+    _initializeMapMyIndia();
+    _getAccessToken();
   }
 
-  void _initializeMapmyIndia() {
+  Future<void> _fetchVehicleRouteData() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = "Fetching route data...";
+    });
+
+    try {
+      final vehicleDoc = await FirebaseFirestore.instance
+          .collection('vehicles')
+          .where('vehicle_no', isEqualTo: int.parse(widget.vehicleNumber))
+          .get();
+
+      if (vehicleDoc.docs.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = "Vehicle not found";
+        });
+        return;
+      }
+
+      final vehicleId = vehicleDoc.docs.first.id;
+
+      final routeDoc = await FirebaseFirestore.instance
+          .collection('routes')
+          .where('vehicle_id', isEqualTo: vehicleId)
+          .get();
+
+      if (routeDoc.docs.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = "Existing route not found";
+        });
+        return;
+      }
+
+      final routeData = routeDoc.docs.first.data();
+      if (routeData['waypoints'] == null || routeData['source_location'] == null) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = "Route data is incomplete";
+        });
+        return;
+      }
+
+      _routeName = routeData['name'] ?? 'Unknown Route';
+
+      final waypointsData = routeData['waypoints'];
+      if (waypointsData != null) {
+        _storedWaypoints.clear();
+        for (var waypoint in waypointsData) {
+          if (waypoint['lat'] != null && waypoint['lng'] != null) {
+            _storedWaypoints.add(LatLng(waypoint['lat'], waypoint['lng']));
+          }
+        }
+
+        _destinations.clear();
+        _destinations.addAll(_storedWaypoints);
+      }
+
+      setState(() {
+        _isLoading = false;
+        _statusMessage = "Route loaded: ${_storedWaypoints.length} waypoints";
+        _isExistingRouteLoaded = true;
+      });
+
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _statusMessage = "Error loading route: $e";
+      });
+      print("Error fetching route data: $e");
+    }
+  }
+
+  Future<void> _drawExistingRoute() async {
+    if (_mapController == null || _currentDeviceLocation == null || _storedWaypoints.isEmpty) {
+      return;
+    }
+
+    _existingRoutesDisplayed = true;
+    await _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
+
+    for (int i = 0; i < _storedWaypoints.length; i++) {
+      await _addMarkerAtPosition(_storedWaypoints[i], index: i + 1);
+    }
+
+    await _calculateRoutes();
+
+    _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: _currentDeviceLocation!,
+          zoom: 14.0,
+        ),
+      ),
+    );
+  }
+
+  void _initializeMapMyIndia() {
     MapmyIndiaAccountManager.setMapSDKKey(_mapMyIndiaApiKey);
     MapmyIndiaAccountManager.setRestAPIKey(_mapMyIndiaApiKey);
     MapmyIndiaAccountManager.setAtlasClientId(_mapMyIndiaClientId);
@@ -81,7 +184,9 @@ class MapViewScreenState extends State<MapViewScreen> {
   Future<void> _checkLocationPermission() async {
     final status = await Permission.location.request();
     if (status.isGranted) {
-      _getCurrentLocation();
+      if (_currentDeviceLocation == null) {
+        await _getCurrentLocation();
+      }
     } else {
       setState(() {
         _statusMessage = "Location permission denied";
@@ -118,21 +223,27 @@ class MapViewScreenState extends State<MapViewScreen> {
       );
 
       setState(() {
-        _sourceLocation = LatLng(position.latitude, position.longitude);
-        _addMarkerAtPosition(_sourceLocation!, isSource: true);
+        _currentDeviceLocation = LatLng(position.latitude, position.longitude);
         _isLoading = false;
-        _statusMessage = "Source location set. Now add destinations by tapping on the map.";
+        _statusMessage = "Current location found. Fetching route data...";
       });
 
+      if (_mapController != null && _currentDeviceLocation != null) {
+        _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
 
-      _mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: _sourceLocation!,
-            zoom: 14.0,
+        _mapController?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: _currentDeviceLocation!,
+              zoom: 14.0,
+            ),
           ),
-        ),
-      );
+        );
+      }
+
+      // if (_isExistingRouteLoaded && _mapController != null && !_existingRoutesDisplayed) {
+      //   _drawExistingRoute();
+      // }
     }
     catch (e) {
       setState(() {
@@ -142,15 +253,29 @@ class MapViewScreenState extends State<MapViewScreen> {
     }
   }
 
-  void _addMarkerAtPosition(LatLng position, {bool isSource = false, int? index}) async {
+  Future<void> _addMarkerAtPosition(LatLng position, {bool isSource = false, bool isCurrentLocation = false, int? index}) async {
     if (_mapController == null) return;
 
     try {
+      String iconImage;
+      String textField;
+
+      if (isCurrentLocation) {
+        iconImage = _currentLocationImageId;
+        textField = "Current Location";
+      } else if (isSource) {
+        iconImage = _sourceImageId;
+        textField = "Route Start";
+      } else {
+        iconImage = _destinationImageId;
+        textField = index != null ? "$index" : "";
+      }
+
       final SymbolOptions symbolOptions = SymbolOptions(
         geometry: position,
         iconSize: 1.0,
-        iconImage: isSource ? "marker-source" : "marker-destination",
-        textField: isSource ? "Your Location" : index != null ? "$index" : "",
+        iconImage: iconImage,
+        textField: textField,
         textSize: 12.0,
         textColor: "#000000",
         textOffset: const Offset(0, 1.5),
@@ -159,19 +284,19 @@ class MapViewScreenState extends State<MapViewScreen> {
       final Symbol symbol = await _mapController!.addSymbol(symbolOptions);
       setState(() {
         _markers.add(symbol);
-        if(isSource){
-          existingSourceMarker = symbol;
+        if (isCurrentLocation) {
+          _currentLocationMarker = symbol;
+        }
+        else if (isSource) {
         }
       });
     }
     catch (e) {
-      print("Error adding marker");
+      print("Error adding marker: $e");
     }
   }
 
   void listenForVehicleUpdates() async {
-    print('Listening to updates for vehicle: ${widget.vehicleNumber}');
-
     try {
       _vehicleSubscription = FirebaseFirestore.instance
           .collection('vehicles')
@@ -197,29 +322,29 @@ class MapViewScreenState extends State<MapViewScreen> {
           final newLocation = LatLng(newLat, newLng);
 
           bool significantChange = false;
-          if (_sourceLocation != null) {
-            double distance = _calculateDistance(_sourceLocation!, newLocation);
+          if (_currentDeviceLocation != null) {
+            double distance = _calculateDistance(_currentDeviceLocation!, newLocation);
             significantChange = distance > 0.05; // recalculate if moved more than 50m
           }
 
           setState(() {
-            _sourceLocation = newLocation;
+            _currentDeviceLocation = newLocation;
           });
 
-          if (existingSourceMarker != null && _mapController != null) {
+          if (_currentLocationMarker != null && _mapController != null) {
             await _mapController!.updateSymbol(
-              existingSourceMarker!,
+              _currentLocationMarker!,
               SymbolOptions(geometry: newLocation),
             );
 
-            _mapController!.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: newLocation,
-                  zoom: 14.0,
-                ),
-              ),
-            );
+            // _mapController!.animateCamera(
+            //   CameraUpdate.newCameraPosition(
+            //     CameraPosition(
+            //       target: newLocation,
+            //       zoom: 14.0,
+            //     ),
+            //   ),
+            // );
 
             if (_destinations.isNotEmpty && significantChange) {
               await _clearRoutes();
@@ -228,9 +353,9 @@ class MapViewScreenState extends State<MapViewScreen> {
           }
         }
       },
-      onError: (error) {
-        print('Error in Firestore listener: $error');
-      });
+          onError: (error) {
+            print('Error in Firestore listener: $error');
+          });
     }
     catch (error) {
       print('Error setting up vehicle listener: $error');
@@ -238,26 +363,26 @@ class MapViewScreenState extends State<MapViewScreen> {
   }
 
   void _onMapTap(Point<double> point, LatLng coordinates) {
-    if (_sourceLocation == null) {
-      setState(() {
-        _sourceLocation = coordinates;
-        _addMarkerAtPosition(coordinates, isSource: true);
-        _statusMessage = "Source location set. Now add destinations by tapping on the map.";
-      });
-    }
-    else {
+    // if (_sourceLocation == null) {
+    //   setState(() {
+    //     _sourceLocation = coordinates;
+    //     _addMarkerAtPosition(coordinates, isSource: true);
+    //     _statusMessage = "Source location set. Now add destinations by tapping on the map.";
+    //   });
+    // }
+    // else {
       setState(() {
         _destinations.add(coordinates);
         _addMarkerAtPosition(coordinates, index: _destinations.length);
         _statusMessage = "Added destination ${_destinations.length}";
       });
-    }
+    // }
   }
 
   Future<void> _calculateRoutes() async {
-    if (_sourceLocation == null || _destinations.isEmpty) {
+    if (_currentDeviceLocation == null || _destinations.isEmpty) {
       setState(() {
-        _statusMessage = "Please set source and at least one destination";
+        _statusMessage = "Missing location data for route calculation";
       });
       return;
     }
@@ -269,14 +394,29 @@ class MapViewScreenState extends State<MapViewScreen> {
     });
 
     try {
-      // build distance matrix between all points
+      List<LatLng> orderedPoints = [_currentDeviceLocation!];
+
       final distanceMatrix = await _getDistanceMatrix();
 
-      // find the optimal order to visit destinations
-      final optimizedOrder = _findOptimalRoute(distanceMatrix);
+      final optimizedDestinationOrder = _findOptimalRoute(distanceMatrix);
 
-      // Get and draw actual road paths between points in the optimal order
-      await _drawOptimalRoute(optimizedOrder);
+      for (int i = 0; i < optimizedDestinationOrder.length; i++) {
+        int idx = optimizedDestinationOrder[i];
+        orderedPoints.add(_destinations[idx]);
+
+      }
+
+      // Draw routes between all points
+      for (int i = 0; i < orderedPoints.length - 1; i++) {
+        LatLng from = orderedPoints[i];
+        LatLng to = orderedPoints[i + 1];
+
+        List<LatLng> routePoints = await _getRouteBetweenPoints(from, to);
+
+        if (routePoints.isNotEmpty) {
+          await _drawRoute(routePoints);
+        }
+      }
 
       setState(() {
         _isLoading = false;
@@ -293,7 +433,7 @@ class MapViewScreenState extends State<MapViewScreen> {
 
   Future<Map<String, Map<String, double>>> _getDistanceMatrix() async {
     Map<String, Map<String, double>> distanceMatrix = {};
-    List<LatLng> allPoints = [_sourceLocation!, ..._destinations];
+    List<LatLng> allPoints = [..._destinations];
 
     for (int i = 0; i < allPoints.length; i++) {
       String key = "$i";
@@ -309,59 +449,6 @@ class MapViewScreenState extends State<MapViewScreen> {
     }
 
     try {
-
-      List<String> coords = allPoints.map((point) => "${point.longitude},${point.latitude}").toList();
-
-      final url = 'https://apis.mapmyindia.com/advancedmaps/v1/$_mapMyIndiaApiKey/distance_matrix/driving';
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_accessToken',
-        },
-        body: json.encode({
-          'coordinates': coords,
-          'rtype': 1, // For time-based routing
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['results'] != null &&
-            data['results']['durations'] != null &&
-            data['results']['distances'] != null) {
-
-          final durations = data['results']['durations']; // Time matrix in seconds
-
-          // fill the distance matrix with travel times (for time optimization)
-          for (int i = 0; i < allPoints.length; i++) {
-            for (int j = 0; j < allPoints.length; j++) {
-              if (i != j) {
-                // Use travel time (in minutes) as the "distance" for optimization
-                distanceMatrix["$i"]?["$j"] = durations[i][j] / 60.0;
-              }
-            }
-          }
-        } else {
-          print('Invalid response structure from Distance Matrix API: $data');
-        }
-      } else {
-        print('Distance Matrix API error: ${response.statusCode} - ${response.body}');
-
-        // use estimated distances if API fails
-        for (int i = 0; i < allPoints.length; i++) {
-          for (int j = 0; j < allPoints.length; j++) {
-            if (i != j) {
-              distanceMatrix["$i"]?["$j"] = _calculateDistance(allPoints[i], allPoints[j]);
-            }
-          }
-        }
-      }
-    }
-    catch (e) {
-      print('Error in _getDistanceMatrix: $e');
       // use estimated distances
       for (int i = 0; i < allPoints.length; i++) {
         for (int j = 0; j < allPoints.length; j++) {
@@ -370,6 +457,9 @@ class MapViewScreenState extends State<MapViewScreen> {
           }
         }
       }
+    }
+    catch (e) {
+      print('Error in _getDistanceMatrix: $e');
     }
 
     return distanceMatrix;
@@ -403,24 +493,6 @@ class MapViewScreenState extends State<MapViewScreen> {
       }
     }
     return route;
-  }
-
-  Future<void> _drawOptimalRoute(List<int> optimizedOrder) async {
-    List<LatLng> allPoints = [_sourceLocation!, ..._destinations];
-
-    for (int i = 0; i < optimizedOrder.length - 1; i++) {
-      int fromIdx = optimizedOrder[i];
-      int toIdx = optimizedOrder[i + 1];
-
-      LatLng from = allPoints[fromIdx];
-      LatLng to = allPoints[toIdx];
-
-      List<LatLng> routePoints = await _getRouteBetweenPoints(from, to);
-
-      if (routePoints.isNotEmpty) {
-        await _drawRoute(routePoints);
-      }
-    }
   }
 
   Future<List<LatLng>> _getRouteBetweenPoints(LatLng start, LatLng end) async {
@@ -573,30 +645,11 @@ class MapViewScreenState extends State<MapViewScreen> {
     // Haversine formula
     double dLat = lat2 - lat1;
     double dLon = lon2 - lon1;
-    double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
+    double a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
     double distance = earthRadius * c;
 
     return distance;
-  }
-
-  void _resetMap() async {
-    if (_mapController != null) {
-      for (Symbol marker in _markers) {
-        if(marker.options.textField != "Your Location"){
-          await _mapController!.removeSymbol(marker);
-        }
-      }
-      _clearRoutes();
-    }
-
-    setState(() {
-      _markers.clear();
-      _destinations.clear();
-      // _sourceLocation = null;
-      _statusMessage = "Map reset. Select source and destinations.";
-    });
   }
 
   Future<void> _clearRoutes() async {
@@ -611,40 +664,30 @@ class MapViewScreenState extends State<MapViewScreen> {
   void _onMapCreated(MapmyIndiaMapController controller) async {
     _mapController = controller;
 
-    _loadMapIcons();
+    await _loadMapIcons();
+    await _checkLocationPermission();
+    await _fetchVehicleRouteData();
 
-    if (_sourceLocation != null) {
-      _mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: _sourceLocation!,
-            zoom: 14.0,
-          ),
-        ),
-      );
-      await _mapController?.addSymbol(
-        SymbolOptions(
-          geometry: _sourceLocation!,
-          iconImage: "marker-source",
-          textField: "Your Location",
-          textOffset: const Offset(0, 1.5),
-        ),
-      ).then((symbol){
-        existingSourceMarker = symbol;
-      });
+    print('map  init............');
+    if (_isExistingRouteLoaded && _currentDeviceLocation != null && !_existingRoutesDisplayed) {
+      _drawExistingRoute();
     }
     listenForVehicleUpdates();
   }
 
-  void _loadMapIcons() async {
+  Future<void> _loadMapIcons() async {
     try {
       await _mapController!.addImage(
-        "marker-source",
+        _sourceImageId,
         await _loadAssetImage("assets/icon/logo.png"),
       );
       await _mapController!.addImage(
-        "marker-destination",
+        _destinationImageId,
         await _loadAssetImage("assets/icon/destination.png"),
+      );
+      await _mapController!.addImage(
+        _currentLocationImageId,
+        await _loadAssetImage("assets/icon/logo.png"),
       );
     } catch (e) {
       print("Error loading marker icons: $e");
@@ -655,17 +698,17 @@ class MapViewScreenState extends State<MapViewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Find Optimal Route'),
+        title: Text(_routeName != null ? 'Route: $_routeName' : 'Find Optimal Route'),
       ),
       body: Stack(
         children: [
           MapmyIndiaMap(
-            initialCameraPosition: CameraPosition(
-              target: _sourceLocation ?? const LatLng(20.5937, 78.9629), // Default to India
-              zoom: 5.0,
-            ),
-            onMapCreated: _onMapCreated,
-            onMapClick: _onMapTap
+              initialCameraPosition: CameraPosition(
+                target: _currentDeviceLocation ?? const LatLng(20.5937, 78.9629), // Default to India
+                zoom: 5.0,
+              ),
+              onMapCreated: _onMapCreated,
+              onMapClick: _onMapTap
           ),
           Positioned(
             bottom: 0,
@@ -689,10 +732,10 @@ class MapViewScreenState extends State<MapViewScreen> {
                         onPressed: _calculateRoutes,
                         child: const Text('Calculate Optimal Route'),
                       ),
-                      ElevatedButton(
-                        onPressed: _resetMap,
-                        child: const Text('Reset'),
-                      ),
+                      // ElevatedButton(
+                      //   onPressed: _resetMap,
+                      //   child: const Text('Reset'),
+                      // ),
                     ],
                   ),
                 ],

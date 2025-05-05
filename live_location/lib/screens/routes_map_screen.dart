@@ -165,25 +165,6 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
     }
   }
 
-  void _initializeMap() {
-    _loadMapIcons();
-    if (_mapController != null) {
-      if(_sourceMarker == null && _sourceLocation != null){
-        _addSourceMarker(_sourceLocation!);
-      }
-      if (_sourceLocation != null && _isSourceSet) {
-
-        if (_waypoints.isNotEmpty) {
-          _drawExistingWaypoints();
-        }
-
-        setState(() {
-          _statusMessage = _isSourceSet ? "Add waypoints by tapping on the map" : "Set source location by tapping on the map";
-        });
-      }
-    }
-  }
-
   void _drawExistingWaypoints() async {
     for (int i = 0; i < _waypoints.length; i++) {
       await _addMarkerAtPosition(_waypoints[i], index: i + 1);
@@ -342,7 +323,8 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
         _isLoading = false;
         _statusMessage = "Optimal route calculated successfully";
       });
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _isLoading = false;
         _statusMessage = "Error calculating routes. Try Again";
@@ -361,8 +343,7 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
     // Haversine formula
     double dLat = lat2 - lat1;
     double dLon = lon2 - lon1;
-    double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
+    double a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
     double distance = earthRadius * c;
 
@@ -554,7 +535,6 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
     });
 
     try {
-      // Create a list of waypoint data in the current (optimized) order
       List<Map<String, dynamic>> waypointsData = _waypoints.map((point) {
         return {
           'lat': point.latitude,
@@ -590,7 +570,6 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
           ),
         );
 
-        // Navigate back
         Navigator.pop(context);
       }
     } catch (e) {
@@ -603,6 +582,23 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving route: $e')),
         );
+      }
+    }
+  }
+
+  void _initializeMap() {
+    _loadMapIcons();
+    if (_mapController != null) {
+      if(_sourceMarker == null && _sourceLocation != null){
+        _addSourceMarker(_sourceLocation!);
+      }
+      if (_sourceLocation != null && _isSourceSet) {
+        if (_waypoints.isNotEmpty) {
+          _drawExistingWaypoints();
+        }
+        setState(() {
+          _statusMessage = _isSourceSet ? "Add waypoints by tapping on the map" : "Set source location by tapping on the map";
+        });
       }
     }
   }

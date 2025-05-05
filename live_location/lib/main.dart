@@ -48,8 +48,6 @@ Future<void> main() async {
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
-  print("Handling a background message: ${message.messageId}");
-
   if (message.notification != null) {
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
