@@ -195,8 +195,11 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
               textField: data['vehicle_no'].toString(),
               textOffset: const Offset(0, 1.5),
             ),
-          ).then((symbol) {
+          ).then((symbol) async {
             vehicleMarkers[data['vehicle_no'].toString()] = symbol;
+            await mapController!.moveCamera(
+              CameraUpdate.newLatLngZoom(LatLng(newLat, newLng), 14.0),
+            );
           });
         }
       }

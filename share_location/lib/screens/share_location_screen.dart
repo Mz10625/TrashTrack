@@ -80,10 +80,11 @@ void onStart(ServiceInstance service) async {
   positionStreamSubscription = Geolocator.getPositionStream(
     locationSettings: AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 40, // update location after every 40 meters
+      distanceFilter: 5, // update location after every 5 meters
     ),
   ).listen((Position position) async {
     try {
+      // print('stream updated....');
       int vehicleNum = int.tryParse(vehicleNumber) ?? 0;
       var query = await vehiclesCollection
           .where('vehicle_no', isEqualTo: vehicleNum)
@@ -107,7 +108,7 @@ void onStart(ServiceInstance service) async {
       }
     }
     catch (e) {
-      print('Error updating location in background: $e');
+      print('Error updating location in background');
     }
   });
 }

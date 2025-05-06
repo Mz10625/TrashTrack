@@ -66,7 +66,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
               .map((doc) => Map<String, dynamic>.from(doc.data() as Map))
               .toList();
 
-
           hasActiveVehicles = vehicles.any((vehicle) => vehicle['status'] == 'Active');
           isLoading = false;
         });

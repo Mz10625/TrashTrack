@@ -52,14 +52,13 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
   @override
   void initState() {
     super.initState();
-    _initializeMapmyIndia();
-    _getAccessToken();
 
     if (widget.existingSourceLocation != null) {
       double lat = widget.existingSourceLocation!['lat'];
       double lng = widget.existingSourceLocation!['lng'];
       _sourceLocation = LatLng(lat, lng);
       _isSourceSet = true;
+      _addSourceMarker(_sourceLocation!);
     }
     else{
       _getCurrentLocation();
@@ -72,6 +71,9 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
         }
       }
     }
+
+    _initializeMapmyIndia();
+    _getAccessToken();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -177,45 +179,58 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
 
   Future<void> _addSourceMarker(LatLng position) async {
     if (_mapController == null) return;
-    try {
 
-      if (_sourceMarker != null) {
-        await _mapController!.removeSymbol(_sourceMarker!);
-        _sourceMarker = null;
-      }
+    int retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = Duration(milliseconds: 300);
 
-      final SymbolOptions symbolOptions = SymbolOptions(
-        geometry: position,
-        iconSize: 1.2,
-        iconImage: "marker-source",
-        textField: "Source",
-        textSize: 14.0,
-        textColor: "#000000",
-        textOffset: const Offset(0, 1.8),
-      );
+    while (retryCount < maxRetries) {
+      try {
+        if (_sourceMarker != null) {
+          await _mapController!.removeSymbol(_sourceMarker!);
+          _sourceMarker = null;
+        }
 
-      final Symbol symbol = await _mapController!.addSymbol(symbolOptions);
+        final SymbolOptions symbolOptions = SymbolOptions(
+          geometry: position,
+          iconSize: 1.2,
+          iconImage: "marker-source",
+          textField: "Source",
+          textSize: 14.0,
+          textColor: "#000000",
+          textOffset: const Offset(0, 1.8),
+        );
 
-      setState(() {
-        _sourceMarker = symbol;
-        _isSourceSet = true;
-        _statusMessage = "Source set. Add waypoints by tapping on the map";
-      });
+        final Symbol symbol = await _mapController!.addSymbol(symbolOptions);
 
-      _mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: _sourceLocation!,
-            zoom: 14.0,
+        setState(() {
+          _sourceMarker = symbol;
+          _isSourceSet = true;
+          _statusMessage = "Source set. Add waypoints by tapping on the map";
+        });
+
+        _mapController?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: _sourceLocation!,
+              zoom: 14.0,
+            ),
           ),
-        ),
-      );
+        );
 
-      if (_waypoints.isNotEmpty) {
-        _calculateAndDrawRoutes();
+        if (_waypoints.isNotEmpty) {
+          _calculateAndDrawRoutes();
+        }
+
+        return;
       }
-    } catch (e) {
-      print("Error adding source marker: $e");
+      catch (e) {
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          return;
+        }
+        await Future.delayed(retryDelay * retryCount);
+      }
     }
   }
 
@@ -575,7 +590,7 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _statusMessage = "Error saving route: $e";
+        _statusMessage = "Error saving route:";
       });
 
       if (mounted) {
@@ -587,19 +602,21 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
   }
 
   void _initializeMap() {
-    if (_mapController != null) {
-      if(_sourceMarker == null && _sourceLocation != null){
-        _addSourceMarker(_sourceLocation!);
-      }
-      if (_sourceLocation != null && _isSourceSet) {
-        if (_waypoints.isNotEmpty) {
-          _drawExistingWaypoints();
+      Future.delayed(const Duration(milliseconds: 1000), (){
+        if (_sourceMarker == null && _sourceLocation != null) {
+          _addSourceMarker(_sourceLocation!);
         }
-        setState(() {
-          _statusMessage = _isSourceSet ? "Add waypoints by tapping on the map" : "Set source location by tapping on the map";
-        });
-      }
-    }
+        if (_sourceLocation != null && _isSourceSet) {
+          if (_waypoints.isNotEmpty) {
+            _drawExistingWaypoints();
+          }
+          setState(() {
+            _statusMessage = _isSourceSet
+                ? "Add waypoints by tapping on the map"
+                : "Set source location by tapping on the map";
+          });
+        }
+      });
   }
 
   @override
@@ -624,7 +641,7 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
                 _initializeMap();
               },
               onStyleLoadedCallback: _loadMapIcons,
-              onMapClick: _onMapTap
+              onMapClick: _onMapTap,
           ),
           Positioned(
             top: 16,
