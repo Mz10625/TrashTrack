@@ -25,7 +25,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   File? _selectedImage;
   bool _isLoading = false;
   String? _wardNumber;
-
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -502,8 +501,6 @@ class _FeedbackHistoryScreenState extends State<FeedbackHistoryScreen> {
   final user = FirebaseAuth.instance.currentUser;
   List<Map<String, dynamic>> feedbackList = [];
   bool isLoading = true;
-
-
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
   final Color backgroundColor = const Color(0xFFF5F7FA);

@@ -44,7 +44,6 @@ class _RouteMapEditorState extends State<RouteMapEditor> {
   bool _isSourceSet = false;
   String _statusMessage = "Set source location first, then add waypoints";
   String _accessToken = '';
-
   final Color primaryColor = const Color(0xFF3F51B5);
   final Color accentColor = const Color(0xFF4CAF50);
   final Color sourceColor = const Color(0xFF2196F3);

@@ -164,6 +164,7 @@ class MapViewScreenState extends State<MapViewScreen> {
 
     _existingRoutesDisplayed = true;
     await _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
+    print('marker added for existing routes....................');
 
     for (int i = 0; i < _storedWaypoints.length; i++) {
       await _addMarkerAtPosition(_storedWaypoints[i], index: i + 1);
@@ -227,23 +228,6 @@ class MapViewScreenState extends State<MapViewScreen> {
         _isLoading = false;
         _statusMessage = "Current location found. Fetching route data...";
       });
-
-      if (_mapController != null && _currentDeviceLocation != null) {
-        _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
-
-        _mapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: _currentDeviceLocation!,
-              zoom: 14.0,
-            ),
-          ),
-        );
-      }
-
-      // if (_isExistingRouteLoaded && _mapController != null && !_existingRoutesDisplayed) {
-      //   _drawExistingRoute();
-      // }
     }
     catch (e) {
       setState(() {
@@ -289,8 +273,6 @@ class MapViewScreenState extends State<MapViewScreen> {
         if (isCurrentLocation) {
           _currentLocationMarker = symbol;
         }
-        else if (isSource) {
-        }
       });
     }
     catch (e) {
@@ -323,12 +305,6 @@ class MapViewScreenState extends State<MapViewScreen> {
           final double newLng = data['current_location'].longitude;
           final newLocation = LatLng(newLat, newLng);
 
-          // bool significantChange = false;
-          // if (_currentDeviceLocation != null) {
-          //   double distance = _calculateDistance(_currentDeviceLocation!, newLocation);
-          //   significantChange = distance > 0.05; // recalculate if moved more than 50m
-          // }
-
           setState(() {
             _currentDeviceLocation = newLocation;
           });
@@ -338,15 +314,6 @@ class MapViewScreenState extends State<MapViewScreen> {
               _currentLocationMarker!,
               SymbolOptions(geometry: newLocation),
             );
-
-            // _mapController!.animateCamera(
-            //   CameraUpdate.newCameraPosition(
-            //     CameraPosition(
-            //       target: newLocation,
-            //       zoom: 14.0,
-            //     ),
-            //   ),
-            // );
 
             if (_destinations.isNotEmpty) {
               await _clearRoutes();
@@ -365,20 +332,11 @@ class MapViewScreenState extends State<MapViewScreen> {
   }
 
   void _onMapTap(Point<double> point, LatLng coordinates) {
-    // if (_sourceLocation == null) {
-    //   setState(() {
-    //     _sourceLocation = coordinates;
-    //     _addMarkerAtPosition(coordinates, isSource: true);
-    //     _statusMessage = "Source location set. Now add destinations by tapping on the map.";
-    //   });
-    // }
-    // else {
       setState(() {
         _destinations.add(coordinates);
         _addMarkerAtPosition(coordinates, index: _destinations.length);
         _statusMessage = "Added destination ${_destinations.length}";
       });
-    // }
   }
 
   Future<void> _calculateRoutes() async {
@@ -408,7 +366,6 @@ class MapViewScreenState extends State<MapViewScreen> {
 
       }
 
-      // Draw routes between all points
       for (int i = 0; i < orderedPoints.length - 1; i++) {
         LatLng from = orderedPoints[i];
         LatLng to = orderedPoints[i + 1];
@@ -546,7 +503,6 @@ class MapViewScreenState extends State<MapViewScreen> {
               }
             }
           }
-
           // If empty, use straight line
           if (routePoints.isEmpty) {
             routePoints = [start, end];
@@ -632,15 +588,15 @@ class MapViewScreenState extends State<MapViewScreen> {
   }
 
   double _calculateDistance(LatLng point1, LatLng point2) {
-    const double earthRadius = 6371.0; // Earth radius in kilometers
+    const double earthRadius = 6371.0; // earth radius in kilometers
 
-    // Convert degrees to radians
+    // convert degrees to radians
     double lat1 = point1.latitude * (pi / 180);
     double lon1 = point1.longitude * (pi / 180);
     double lat2 = point2.latitude * (pi / 180);
     double lon2 = point2.longitude * (pi / 180);
 
-    // Haversine formula
+    // haversine formula
     double dLat = lat2 - lat1;
     double dLon = lon2 - lon1;
     double a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
@@ -663,6 +619,17 @@ class MapViewScreenState extends State<MapViewScreen> {
     _mapController = controller;
 
     await _checkLocationPermission();
+    if (_currentDeviceLocation != null && _currentLocationMarker == null) {
+      _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: _currentDeviceLocation!,
+            zoom: 14.0,
+          ),
+        ),
+      );
+    }
     await _fetchVehicleRouteData();
 
     if (_isExistingRouteLoaded && _currentDeviceLocation != null && !_existingRoutesDisplayed) {
@@ -685,7 +652,8 @@ class MapViewScreenState extends State<MapViewScreen> {
         _currentLocationImageId,
         await _loadAssetImage("assets/icon/logo.png"),
       );
-    } catch (e) {
+    }
+    catch (e) {
       print("Error loading marker icons: $e");
     }
   }
@@ -700,7 +668,7 @@ class MapViewScreenState extends State<MapViewScreen> {
         children: [
           MapmyIndiaMap(
               initialCameraPosition: CameraPosition(
-                target: _currentDeviceLocation ?? const LatLng(20.5937, 78.9629), // Default to India
+                target: _currentDeviceLocation ?? const LatLng(20.5937, 78.9629), // default to India
                 zoom: 5.0,
               ),
               onMapCreated: _onMapCreated,
@@ -729,10 +697,6 @@ class MapViewScreenState extends State<MapViewScreen> {
                         onPressed: _calculateRoutes,
                         child: const Text('Calculate Optimal Route'),
                       ),
-                      // ElevatedButton(
-                      //   onPressed: _resetMap,
-                      //   child: const Text('Reset'),
-                      // ),
                     ],
                   ),
                 ],
