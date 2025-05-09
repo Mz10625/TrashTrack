@@ -98,7 +98,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error checking vehicle: $e')),
+          const SnackBar(content: Text('Error checking vehicle')),
         );
       }
       _resumeScanning();

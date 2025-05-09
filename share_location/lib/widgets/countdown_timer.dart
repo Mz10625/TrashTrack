@@ -6,10 +6,10 @@ class CountdownTimer extends StatefulWidget {
   final int durationHours;
 
   const CountdownTimer({
-    Key? key,
+    super.key,
     required this.startTime,
     required this.durationHours,
-  }) : super(key: key);
+  });
 
   @override
   State<CountdownTimer> createState() => _CountdownTimerState();

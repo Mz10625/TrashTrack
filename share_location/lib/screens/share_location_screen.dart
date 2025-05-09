@@ -36,6 +36,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   String _wardNumber = '';
   bool _isInBackgroundMode = false;
   StreamSubscription<dynamic>? _backgroundLocationSubscription;
+  final bool _isDisposed = false;
 
   @override
   void initState() {
@@ -45,116 +46,183 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   }
 
   Future<void> _initializeScreen() async {
-    await _loadVehicleData();
-    await _initLocationService();
+    try {
+      await _loadVehicleData();
+      await _initLocationService();
 
-    final prefs = await SharedPreferences.getInstance();
-    _isInBackgroundMode = prefs.getBool('isInBackgroundMode') ?? false;
+      final prefs = await SharedPreferences.getInstance();
+      final isInBackgroundMode = prefs.getBool('isInBackgroundMode') ?? false;
+      final trackingStartTimeStr = prefs.getString('trackingStartTime');
+      final isTrackingActive = prefs.getBool('isTrackingActive') ?? false;
+      final storedVehicleNumber = prefs.getString('vehicleNumber');
 
-    final trackingStartTimeStr = prefs.getString('trackingStartTime');
-    final isTrackingActive = prefs.getBool('isTrackingActive') ?? false;
+      final shouldRestoreTracking = isTrackingActive && storedVehicleNumber == widget.vehicleNumber && trackingStartTimeStr != null;
 
-    if (isTrackingActive && trackingStartTimeStr != null) {
-      setState(() {
-        _isTrackingActive = true;
-        _trackingStartTime = DateTime.parse(trackingStartTimeStr);
-      });
+      if (shouldRestoreTracking) {
+        if (!_isDisposed) {
+          setState(() {
+            _isTrackingActive = true;
+            _isInBackgroundMode = isInBackgroundMode;
+            _trackingStartTime = DateTime.parse(trackingStartTimeStr);
+          });
+        }
 
-      if (_isInBackgroundMode) {
-        _startBackgroundLocationTracking();
-      } else {
-        _startLocationUpdateTimer();
+        if (_trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
+          _stopLocationTracking();
+          if (!_isDisposed && mounted) {
+            _showTrackingTimeoutDialog();
+          }
+        }
+        else {
+          if (isInBackgroundMode) {
+            _startBackgroundLocationTracking();
+          } else {
+            _startLocationUpdateTimer();
+          }
+        }
       }
     }
-
-    setState(() {
-      _isLoading = false;
-    });
+    catch (e) {
+      debugPrint('Error initializing screen: $e');
+    }
+    finally {
+      if (!_isDisposed && mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadTrackingStartTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    final trackingStartTimeStr = prefs.getString('trackingStartTime');
-    if (trackingStartTimeStr != null) {
-      setState(() {
-        _trackingStartTime = DateTime.parse(trackingStartTimeStr);
-      });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final trackingStartTimeStr = prefs.getString('trackingStartTime');
+      if (trackingStartTimeStr != null && !_isDisposed && mounted) {
+        setState(() {
+          _trackingStartTime = DateTime.parse(trackingStartTimeStr);
+        });
+      }
+    }
+    catch (e) {
+      debugPrint('Error loading tracking start time: $e');
     }
   }
 
   Future<void> _loadVehicleData() async {
     try {
       Map<String, dynamic>? data = await _firestoreService.getVehicleData(widget.vehicleNumber);
-      setState(() {
-        _vehicleData = data;
-        if (data != null) {
-          _isTrackingActive = data['status'] == 'Active';
-          if (data['ward_no'] != null) {
-            _wardNumber = data['ward_no'].toString();
-          }
+      if (!_isDisposed && mounted) {
+        setState(() {
+          _vehicleData = data;
+          if (data != null) {
+            _isTrackingActive = data['status'] == 'Active';
+            if (data['ward_no'] != null) {
+              _wardNumber = data['ward_no'].toString();
+            }
 
-          if (_isTrackingActive) {
-            _loadTrackingStartTime();
+            if (_isTrackingActive) {
+              _loadTrackingStartTime();
+            }
           }
-        }
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading vehicle data')),
-      );
+        });
+      }
+    }
+    catch (e) {
+      debugPrint('Error loading vehicle data: $e');
+      if (!_isDisposed && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error loading vehicle data')),
+        );
+      }
     }
   }
 
   Future<bool> _isLocationServiceEnabled() async {
-    bool serviceEnabled = await _locationService.checkLocationServicesEnabled();
-    LocationPermission permission = await _locationService.checkLocationPermission();
-    if(!serviceEnabled || permission == LocationPermission.denied || permission == LocationPermission.deniedForever){
+    try {
+      bool serviceEnabled = await _locationService.checkLocationServicesEnabled();
+      LocationPermission permission = await _locationService.checkLocationPermission();
+      if(!serviceEnabled || permission == LocationPermission.denied || permission == LocationPermission.deniedForever){
+        return false;
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error checking location service: $e');
       return false;
     }
-    return true;
   }
 
   Future<void> _initLocationService() async {
-    bool serviceEnabled = await _locationService.checkLocationServicesEnabled();
-    if (!serviceEnabled) {
-      _showLocationServicesDialog();
-      return;
-    }
-
-    LocationPermission permission = await _locationService.checkLocationPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await _locationService.requestLocationPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Location permissions are denied'),
-          ),
-        );
+    try {
+      bool serviceEnabled = await _locationService.checkLocationServicesEnabled();
+      if (!serviceEnabled) {
+        if (!_isDisposed && mounted) {
+          _showLocationServicesDialog();
+        }
         return;
       }
+
+      LocationPermission permission = await _locationService.checkLocationPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await _locationService.requestLocationPermission();
+        if (permission == LocationPermission.denied) {
+          if (!_isDisposed && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location permissions are denied'),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!_isDisposed && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permissions are permanently denied, cannot request permissions.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (permission != LocationPermission.always) {
+        bool backgroundGranted = await _locationService.requestBackgroundLocationPermission();
+        if (!backgroundGranted) {
+          if (!_isDisposed && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Background location permission is required for tracking when app is minimized.'),
+              ),
+            );
+          }
+        }
+      }
+
+      try {
+        await BackgroundLocation.setAndroidNotification(
+          title: "Location updates enabled in background",
+          message: "Location updates are enabled in the background.",
+          icon: "@mipmap/launcher_icon",
+        );
+
+        await BackgroundLocation.setAndroidConfiguration(5000); // Update interval in milliseconds
+      }
+      catch (e) {
+        debugPrint('Error setting up background location: $e');
+      }
+      await _updateCurrentLocation();
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Location permissions are permanently denied, cannot request permissions.'),
-        ),
-      );
-      return;
+    catch (e) {
+      debugPrint('Error initializing location service: $e');
     }
-
-    await BackgroundLocation.setAndroidNotification(
-      title: "Location updates enabled in background",
-      message: "Location updates are enabled in the background.",
-      icon: "@mipmap/launcher_icon",
-    );
-
-    await BackgroundLocation.setAndroidConfiguration(5000); // Update interval in milliseconds
-
-    _updateCurrentLocation();
   }
 
   void _showLocationServicesDialog() {
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -174,124 +242,210 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   }
 
   Future<void> _updateCurrentLocation() async {
+    if (_isDisposed) return;
+
     try {
       var locationServiceEnabled = await _isLocationServiceEnabled();
       if(!locationServiceEnabled){
-        _initLocationService();
+        await _initLocationService();
         return;
       }
+
       Position position = await _locationService.getCurrentPosition();
       String address = await _locationService.getAddressFromPosition(position);
 
-      setState(() {
-        _currentPosition = position;
-        _address = address;
-      });
+      if (!_isDisposed && mounted) {
+        setState(() {
+          _currentPosition = position;
+          _address = address;
+        });
+      }
 
       if (_isTrackingActive && _currentPosition != null && !_isInBackgroundMode) {
-        _refreshVehicleData();
+        await _refreshVehicleData();
         await _firestoreService.updateVehicleLocation(widget.vehicleNumber, _currentPosition!);
-        // print('location updated in foreground mode.....');
+        debugPrint('Location updated in foreground mode');
       }
     } catch (e) {
-      if (mounted) {
+      debugPrint('Error updating location: $e');
+      if (!_isDisposed && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error updating location.')),
+          const SnackBar(content: Text('Error updating location')),
         );
       }
     }
   }
 
   void _startLocationTracking() async {
-    var locationServiceEnabled = await _isLocationServiceEnabled();
-    if(!locationServiceEnabled){
-      _initLocationService();
-      return;
+    if (_isDisposed) return;
+
+    try {
+      var locationServiceEnabled = await _isLocationServiceEnabled();
+      if(!locationServiceEnabled){
+        await _initLocationService();
+        return;
+      }
+
+      await _firestoreService.updateVehicleStatus(widget.vehicleNumber, true);
+
+      if (!_isDisposed && mounted) {
+        setState(() {
+          _isTrackingActive = true;
+          _trackingStartTime = DateTime.now();
+        });
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('vehicleNumber', widget.vehicleNumber);
+      await prefs.setString('trackingStartTime', _trackingStartTime!.toIso8601String());
+      await prefs.setInt('trackingDurationHours', _trackingDurationHours);
+      await prefs.setBool('isTrackingActive', true);
+      await prefs.setBool('isInBackgroundMode', false);
+
+      await _updateCurrentLocation();
+
+      _isInBackgroundMode = false;
+      _startLocationUpdateTimer();
+    } catch (e) {
+      debugPrint('Error starting location tracking: $e');
+      if (!_isDisposed && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error starting location tracking')),
+        );
+      }
     }
-
-    await _firestoreService.updateVehicleStatus(widget.vehicleNumber, true);
-
-    setState(() {
-      _isTrackingActive = true;
-      _trackingStartTime = DateTime.now();
-    });
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('vehicleNumber', widget.vehicleNumber);
-    await prefs.setString('trackingStartTime', _trackingStartTime!.toIso8601String());
-    await prefs.setInt('trackingDurationHours', _trackingDurationHours);
-    await prefs.setBool('isTrackingActive', true);
-
-    await _updateCurrentLocation();
-
-    _isInBackgroundMode = false;
-    await prefs.setBool('isInBackgroundMode', false);
-    _startLocationUpdateTimer();
   }
 
   void _startLocationUpdateTimer() {
+    _locationUpdateTimer?.cancel();
     _locationUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (_isDisposed) {
+        timer.cancel();
+        return;
+      }
+
       if (mounted) {
-        var locationServiceEnabled = await _isLocationServiceEnabled();
-        if(!locationServiceEnabled){
-          _stopLocationTracking();
-          return;
-        }
-        await _updateCurrentLocation();
-        if (_trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
-          _stopLocationTracking();
-          _showTrackingTimeoutDialog();
+        try {
+          var locationServiceEnabled = await _isLocationServiceEnabled();
+          if(!locationServiceEnabled){
+            _stopLocationTracking();
+            return;
+          }
+
+          await _updateCurrentLocation();
+
+          if (_trackingStartTime != null &&
+              DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
+            _stopLocationTracking();
+            _showTrackingTimeoutDialog();
+          }
+        } catch (e) {
+          debugPrint('Error in location update timer: $e');
         }
       }
     });
   }
 
   void _startBackgroundLocationTracking() async {
+    if (_isDisposed) return;
 
-    await BackgroundLocation.startLocationService(distanceFilter: 30); // 30 meters filter
+    try {
+      _locationUpdateTimer?.cancel();
+      _locationUpdateTimer = null;
 
-    _backgroundLocationSubscription = BackgroundLocation.getLocationUpdates((location) async {
-      // print('Background location update: ${location.latitude}, ${location.longitude}');
-
-      if (_trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
-        _stopLocationTracking();
-        return;
+      try {
+        await BackgroundLocation.stopLocationService();
+      } catch (e) {
+        debugPrint('Error stopping existing background location: $e');
       }
 
       try {
-        final vehiclesCollection = FirebaseFirestore.instance.collection('vehicles');
-        int vehicleNum = int.tryParse(widget.vehicleNumber) ?? 0;
-        var query = await vehiclesCollection
-            .where('vehicle_no', isEqualTo: vehicleNum)
-            .limit(1)
-            .get();
-
-        if (query.docs.isNotEmpty) {
-          String docId = query.docs.first.id;
-          GeoPoint geoPoint = GeoPoint(location.latitude ?? 0.0, location.longitude ?? 0.0);
-
-          await vehiclesCollection.doc(docId).update({
-            'current_location': geoPoint,
-            'last_updated': FieldValue.serverTimestamp(),
-          });
-          // print('Background location updated in Firestore');
-        }
+        await BackgroundLocation.setAndroidNotification(
+          title: "TrashTrack Active",
+          message: "Location tracking is running in background",
+          icon: "@mipmap/launcher_icon",
+        );
+        await BackgroundLocation.startLocationService(distanceFilter: 30);
       } catch (e) {
-        print('Error updating location in background: $e');
+        debugPrint('Error starting background location: $e');
+        if (!_isDisposed && mounted) {
+          setState(() {
+            _isInBackgroundMode = false;
+          });
+          _startLocationUpdateTimer();
+          return;
+        }
       }
-    });
+
+      _backgroundLocationSubscription = BackgroundLocation.getLocationUpdates((location) async {
+        try {
+          debugPrint('Background location update: ${location.latitude}, ${location.longitude}');
+
+          final prefs = await SharedPreferences.getInstance();
+          final trackingStartTimeStr = prefs.getString('trackingStartTime');
+
+          if (trackingStartTimeStr != null) {
+            final startTime = DateTime.parse(trackingStartTimeStr);
+            if (DateTime.now().difference(startTime).inHours >= _trackingDurationHours) {
+              _stopLocationTracking();
+              return;
+            }
+          }
+
+          if (location.latitude == null || location.longitude == null) {
+            debugPrint('Invalid location data received');
+            return;
+          }
+
+          try {
+            final vehiclesCollection = FirebaseFirestore.instance.collection('vehicles');
+            int vehicleNum = int.tryParse(widget.vehicleNumber) ?? 0;
+            var query = await vehiclesCollection
+                .where('vehicle_no', isEqualTo: vehicleNum)
+                .limit(1)
+                .get();
+
+            if (query.docs.isNotEmpty) {
+              String docId = query.docs.first.id;
+              GeoPoint geoPoint = GeoPoint(location.latitude!, location.longitude!);
+
+              await vehiclesCollection.doc(docId).update({
+                'current_location': geoPoint,
+                'last_updated': FieldValue.serverTimestamp(),
+              });
+              debugPrint('Background location updated in Firestore');
+            }
+          } catch (e) {
+            debugPrint('Error updating Firestore in background: $e');
+          }
+        } catch (e) {
+          debugPrint('Error processing background location update: $e');
+        }
+      });
+    } catch (e) {
+      debugPrint('Error in startBackgroundLocationTracking: $e');
+      if (!_isDisposed && mounted) {
+        setState(() {
+          _isInBackgroundMode = false;
+        });
+        _startLocationUpdateTimer();
+      }
+    }
   }
 
   Future<void> _refreshVehicleData() async {
+    if (_isDisposed) return;
+
     try {
       Map<String, dynamic>? data = await _firestoreService.getVehicleData(widget.vehicleNumber);
-      if (mounted) {
+      if (!_isDisposed && mounted) {
         setState(() {
           _vehicleData = data;
         });
       }
     } catch (e) {
-      if (mounted) {
+      debugPrint('Error refreshing vehicle data: $e');
+      if (!_isDisposed && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error refreshing vehicle data: $e')),
         );
@@ -299,32 +453,59 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
     }
   }
 
-  void _stopLocationTracking() async {
-    _locationUpdateTimer?.cancel();
-    _locationUpdateTimer = null;
+  Future<void> _stopLocationTracking() async {
+    if (_isDisposed) return;
 
-    await BackgroundLocation.stopLocationService();
-    _backgroundLocationSubscription?.cancel();
-    _backgroundLocationSubscription = null;
+    try {
+      _locationUpdateTimer?.cancel();
+      _locationUpdateTimer = null;
 
-    if (_isTrackingActive) {
-      await _firestoreService.updateVehicleStatus(widget.vehicleNumber, false);
+      try {
+        await BackgroundLocation.stopLocationService();
+      }
+      catch (e) {
+        debugPrint('Error stopping background location: $e');
+      }
+
+      _backgroundLocationSubscription?.cancel();
+      _backgroundLocationSubscription = null;
+
+      if (_isTrackingActive) {
+        try {
+          await _firestoreService.updateVehicleStatus(widget.vehicleNumber, false);
+        }
+        catch (e) {
+          debugPrint('Error updating vehicle status: $e');
+        }
+      }
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('trackingStartTime');
+        await prefs.remove('vehicleNumber');
+        await prefs.setBool('isTrackingActive', false);
+        await prefs.setBool('isInBackgroundMode', false);
+      }
+      catch (e) {
+        debugPrint('Error clearing SharedPreferences: $e');
+      }
+
+      if (!_isDisposed && mounted) {
+        setState(() {
+          _isTrackingActive = false;
+          _trackingStartTime = null;
+          _isInBackgroundMode = false;
+        });
+      }
     }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('trackingStartTime');
-    await prefs.remove('vehicleNumber');
-    await prefs.setBool('isTrackingActive', false);
-    await prefs.setBool('isInBackgroundMode', false);
-
-    setState(() {
-      _isTrackingActive = false;
-      _trackingStartTime = null;
-      _isInBackgroundMode = false;
-    });
+    catch (e) {
+      debugPrint('Error stopping location tracking: $e');
+    }
   }
 
   void _showTrackingTimeoutDialog() {
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -343,29 +524,57 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   }
 
   void _switchToBackgroundMode() async {
-    if (_isTrackingActive && !_isInBackgroundMode) {
-      _locationUpdateTimer?.cancel();
-      _locationUpdateTimer = null;
+    if (_isDisposed) return;
 
-      _isInBackgroundMode = true;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isInBackgroundMode', true);
+    try {
+      if (_isTrackingActive && !_isInBackgroundMode) {
+        _locationUpdateTimer?.cancel();
+        _locationUpdateTimer = null;
 
-      _startBackgroundLocationTracking();
+        if (!_isDisposed && mounted) {
+          setState(() {
+            _isInBackgroundMode = true;
+          });
+        }
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isInBackgroundMode', true);
+
+        _startBackgroundLocationTracking();
+      }
+    } catch (e) {
+      debugPrint('Error switching to background mode: $e');
     }
   }
 
   void _switchToForegroundMode() async {
-    if (_isTrackingActive && _isInBackgroundMode) {
-      await BackgroundLocation.stopLocationService();
-      _backgroundLocationSubscription?.cancel();
-      _backgroundLocationSubscription = null;
+    if (_isDisposed) return;
 
-      _isInBackgroundMode = false;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isInBackgroundMode', false);
+    try {
+      if (_isTrackingActive && _isInBackgroundMode) {
+        try {
+          await BackgroundLocation.stopLocationService();
+        }
+        catch (e) {
+          debugPrint('Error stopping background location: $e');
+        }
 
-      _startLocationUpdateTimer();
+        _backgroundLocationSubscription?.cancel();
+        _backgroundLocationSubscription = null;
+
+        if (!_isDisposed && mounted) {
+          setState(() {
+            _isInBackgroundMode = false;
+          });
+        }
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isInBackgroundMode', false);
+
+        _startLocationUpdateTimer();
+      }
+    } catch (e) {
+      debugPrint('Error switching to foreground mode: $e');
     }
   }
 
@@ -399,8 +608,13 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   }
 
   Future<void> _performCleanup() async {
-    _locationUpdateTimer?.cancel();
-    _stopLocationTracking();
+    try {
+      _locationUpdateTimer?.cancel();
+      await _stopLocationTracking();
+    }
+    catch (e) {
+      debugPrint('Error in cleanup: $e');
+    }
   }
 
   @override

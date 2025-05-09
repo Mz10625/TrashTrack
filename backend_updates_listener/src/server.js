@@ -45,7 +45,8 @@ app.listen(process.env.PORT || 5000,'0.0.0.0', () => {
         });
       }
     });
-  }, error => {
+  }, 
+  error => {
     console.error('Error listening to vehicle changes:', error);
   });
 });
@@ -93,7 +94,8 @@ async function notifyUsersInWard(wardNumber, vehicleId, vehicleData) {
     if (batchResponse.failedTokens.length > 0) {
       await handleFailedTokens(batchResponse.failedTokens);
     }
-  } catch (error) {
+  } 
+  catch (error) {
     console.error('Error sending notifications:', error);
   }
 }

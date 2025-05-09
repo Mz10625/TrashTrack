@@ -164,7 +164,6 @@ class MapViewScreenState extends State<MapViewScreen> {
 
     _existingRoutesDisplayed = true;
     await _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
-    print('marker added for existing routes....................');
 
     for (int i = 0; i < _storedWaypoints.length; i++) {
       await _addMarkerAtPosition(_storedWaypoints[i], index: i + 1);
@@ -480,7 +479,8 @@ class MapViewScreenState extends State<MapViewScreen> {
             if (route['geometry'] is String) {
               // decode polyline format
               routePoints = _decodePolyline(route['geometry']);
-            } else if (route['geometry'] is Map && route['geometry']['coordinates'] != null) {
+            }
+            else if (route['geometry'] is Map && route['geometry']['coordinates'] != null) {
               // handle GeoJSON format
               final List<dynamic> coordinates = route['geometry']['coordinates'];
 
