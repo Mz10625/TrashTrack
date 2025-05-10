@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -36,17 +37,21 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   String _wardNumber = '';
   bool _isInBackgroundMode = false;
   StreamSubscription<dynamic>? _backgroundLocationSubscription;
-  final bool _isDisposed = false;
+  bool _isDisposed = false;
+  SharedPreferences? _prefs;
+  static const MethodChannel _channel = MethodChannel('trash_track/app_lifecycle');
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeScreen();
+    _registerAppTerminationHandlers();
   }
 
   Future<void> _initializeScreen() async {
     try {
+      _prefs = await SharedPreferences.getInstance();
       await _loadVehicleData();
       await _initLocationService();
 
@@ -68,7 +73,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
         }
 
         if (_trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
-          _stopLocationTracking();
+          await _stopLocationTracking();
           if (!_isDisposed && mounted) {
             _showTrackingTimeoutDialog();
           }
@@ -91,6 +96,20 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
           _isLoading = false;
         });
       }
+    }
+  }
+
+  void _registerAppTerminationHandlers() {
+    try{
+      _channel.setMethodCallHandler((call) async {
+        if (call.method == 'onAppTerminate') {
+          await _performCleanup();
+        }
+        return null;
+      });
+    }
+    catch(err){
+      return;
     }
   }
 
@@ -208,7 +227,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
           icon: "@mipmap/launcher_icon",
         );
 
-        await BackgroundLocation.setAndroidConfiguration(5000); // Update interval in milliseconds
+        await BackgroundLocation.setAndroidConfiguration(10000); // Update interval in milliseconds
       }
       catch (e) {
         debugPrint('Error setting up background location: $e');
@@ -328,15 +347,14 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
         try {
           var locationServiceEnabled = await _isLocationServiceEnabled();
           if(!locationServiceEnabled){
-            _stopLocationTracking();
+            await _stopLocationTracking();
             return;
           }
 
           await _updateCurrentLocation();
 
-          if (_trackingStartTime != null &&
-              DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
-            _stopLocationTracking();
+          if (_trackingStartTime != null && DateTime.now().difference(_trackingStartTime!).inHours >= _trackingDurationHours) {
+            await _stopLocationTracking();
             _showTrackingTimeoutDialog();
           }
         } catch (e) {
@@ -365,7 +383,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
           message: "Location tracking is running in background",
           icon: "@mipmap/launcher_icon",
         );
-        await BackgroundLocation.startLocationService(distanceFilter: 30);
+        await BackgroundLocation.startLocationService(distanceFilter: 100); // update after 100 meters
       } catch (e) {
         debugPrint('Error starting background location: $e');
         if (!_isDisposed && mounted) {
@@ -387,7 +405,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
           if (trackingStartTimeStr != null) {
             final startTime = DateTime.parse(trackingStartTimeStr);
             if (DateTime.now().difference(startTime).inHours >= _trackingDurationHours) {
-              _stopLocationTracking();
+              await _stopLocationTracking();
               return;
             }
           }
@@ -610,7 +628,16 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   Future<void> _performCleanup() async {
     try {
       _locationUpdateTimer?.cancel();
-      await _stopLocationTracking();
+      _backgroundLocationSubscription?.cancel();
+      await _prefs?.remove('trackingStartTime');
+      await _prefs?.remove('vehicleNumber');
+      await _prefs?.setBool('isTrackingActive', false);
+      await _prefs?.setBool('isInBackgroundMode', false);
+      _isDisposed = true;
+      await BackgroundLocation.stopLocationService();
+      if (_isTrackingActive) {
+        await _firestoreService.updateVehicleStatus(widget.vehicleNumber, false);
+      }
     }
     catch (e) {
       debugPrint('Error in cleanup: $e');
@@ -934,6 +961,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
     _locationUpdateTimer?.cancel();
     _backgroundLocationSubscription?.cancel();
     _stopLocationTracking();
+    _isDisposed = true;
     super.dispose();
   }
 }

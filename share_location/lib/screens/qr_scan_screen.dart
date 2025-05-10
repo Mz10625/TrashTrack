@@ -92,7 +92,8 @@ class _QRScanScreenState extends State<QRScanScreen> {
           _showVehicleNotFoundDialog();
         }
       }
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         isLoading = false;
       });

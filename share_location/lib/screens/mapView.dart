@@ -163,8 +163,6 @@ class MapViewScreenState extends State<MapViewScreen> {
     }
 
     _existingRoutesDisplayed = true;
-    await _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
-
     for (int i = 0; i < _storedWaypoints.length; i++) {
       await _addMarkerAtPosition(_storedWaypoints[i], index: i + 1);
     }
@@ -187,7 +185,8 @@ class MapViewScreenState extends State<MapViewScreen> {
       if (_currentDeviceLocation == null) {
         await _getCurrentLocation();
       }
-    } else {
+    }
+    else {
       setState(() {
         _statusMessage = "Location permission denied";
       });
@@ -620,7 +619,7 @@ class MapViewScreenState extends State<MapViewScreen> {
 
     await _checkLocationPermission();
     if (_currentDeviceLocation != null && _currentLocationMarker == null) {
-      _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
+      await _addMarkerAtPosition(_currentDeviceLocation!, isCurrentLocation: true);
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
