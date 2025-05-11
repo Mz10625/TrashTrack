@@ -45,6 +45,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
       _checkLocationServiceAndComplete();
     }
   }
+
   Future<Uint8List> _loadAssetImage(String path) async {
     final ByteData data = await rootBundle.load(path);
     return data.buffer.asUint8List();
@@ -166,6 +167,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver{
     firestore
         .collection('vehicles')
         .where('ward_no', isEqualTo: user['ward_number'])
+        .where('status', isEqualTo: 'Active')
         .snapshots()
         .listen((snapshot) {
       for (var doc in snapshot.docs) {

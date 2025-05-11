@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 
 class FirestoreService {
   final CollectionReference _vehiclesCollection = FirebaseFirestore.instance.collection('vehicles');
@@ -127,4 +127,15 @@ class FirestoreService {
       return null;
     }
   }
+
+  Future<void> stopLocationSharing(String vehicleNumber) async {
+    try {
+      final Uri uri = Uri.parse('https://firebase-updates-listener.onrender.com/stop-location-sharing?vehicleNumber=$vehicleNumber');
+      http.get(uri);
+    }
+    catch (e) {
+      return;
+    }
+  }
+
 }

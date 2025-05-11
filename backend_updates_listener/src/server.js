@@ -165,3 +165,35 @@ async function handleFailedTokens(failedTokens) {
   }
 }
 
+app.get('/stop-location-sharing', (req, res) => {
+  const vehicleId = req.query.vehicleNumber;
+  
+  if (!vehicleId) {
+    return res.sendStatus(404);
+  }
+  
+  res.sendStatus(202);
+  
+  db.collection('vehicles')
+    .where('vehicle_no', '==', vehicleNumber)
+    .get()
+    .then(snapshot => {
+      if (snapshot.empty) {
+        console.error(`No vehicle found with number: ${vehicleNumber}`);
+        return;
+      }
+
+      const vehicleDoc = snapshot.docs[0];
+
+      db.collection('vehicles').doc(vehicleDoc.id).update({
+        status: 'Inactive',
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+      })
+      .then(() => {
+        console.log(`Vehicle ${vehicleDoc.id} status changed to Inactive`);
+      })
+      .catch(error => {
+        console.error('Error updating vehicle status:', error);
+      });
+    });
+});

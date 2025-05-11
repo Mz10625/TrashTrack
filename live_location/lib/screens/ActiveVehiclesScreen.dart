@@ -168,7 +168,7 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
       }
     }
     catch (e) {
-      print('Error storing new token');
+      // print('Error storing new token');
     }
   }
 
@@ -323,6 +323,8 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
                         await FirebaseAuth.instance.signOut();
                         final prefs = await SharedPreferences.getInstance();
                         prefs.setBool('isLoggedIn', false);
+                        await prefs.remove('fcm_token');
+                        await FirebaseMessaging.instance.deleteToken();
                         if (context.mounted) {
                           Navigator.pushReplacement(
                             context,

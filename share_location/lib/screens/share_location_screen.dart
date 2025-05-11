@@ -371,11 +371,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
       _locationUpdateTimer?.cancel();
       _locationUpdateTimer = null;
 
-      try {
-        await BackgroundLocation.stopLocationService();
-      } catch (e) {
-        debugPrint('Error stopping existing background location: $e');
-      }
+      await BackgroundLocation.stopLocationService();
 
       try {
         await BackgroundLocation.setAndroidNotification(
@@ -384,7 +380,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
           icon: "@mipmap/launcher_icon",
         );
         await BackgroundLocation.startLocationService(distanceFilter: 100); // update after 100 meters
-      } catch (e) {
+      }
+      catch (e) {
         debugPrint('Error starting background location: $e');
         if (!_isDisposed && mounted) {
           setState(() {
@@ -629,15 +626,15 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
     try {
       _locationUpdateTimer?.cancel();
       _backgroundLocationSubscription?.cancel();
+      if (_isTrackingActive) {
+        _firestoreService.stopLocationSharing(widget.vehicleNumber);
+      }
       await _prefs?.remove('trackingStartTime');
       await _prefs?.remove('vehicleNumber');
       await _prefs?.setBool('isTrackingActive', false);
       await _prefs?.setBool('isInBackgroundMode', false);
       _isDisposed = true;
       await BackgroundLocation.stopLocationService();
-      if (_isTrackingActive) {
-        await _firestoreService.updateVehicleStatus(widget.vehicleNumber, false);
-      }
     }
     catch (e) {
       debugPrint('Error in cleanup: $e');
