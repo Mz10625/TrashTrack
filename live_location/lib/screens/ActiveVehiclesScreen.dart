@@ -6,7 +6,6 @@ import 'package:live_location/screens/FeedbackScreen.dart';
 import 'package:live_location/screens/login.dart';
 import 'package:live_location/screens/map_screen.dart';
 import 'package:live_location/services/firebase_operations.dart';
-import 'package:live_location/services/notificationController.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -39,7 +38,6 @@ class _ActiveVehiclesScreenState extends State<ActiveVehiclesScreen> {
     super.initState();
     _setupRealTimeUpdates();
 
-    NotificationController.initializeNotificationListeners();
     _initializeFCM();
   }
 

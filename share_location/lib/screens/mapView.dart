@@ -533,10 +533,10 @@ class MapViewScreenState extends State<MapViewScreen> {
 
         // Decode latitude
         do {
-          b = encoded.codeUnitAt(index++) - 63;
-          result |= (b & 0x1f) << shift;
-          shift += 5;
-        } while (b >= 0x20);
+          b = encoded.codeUnitAt(index++) - 63;  // get the unicode value of the character and subtract 63 from the character code to get ASCII characters
+          result = result | (b & 0x1f) << shift;  // masks off the lower 5 bits of the byte (0x1f = 31 = 0b11111)
+          shift = shift + 5;
+        } while (b >= 0x20);    // continue the loop if the high bit (0x20 = 32 = 0b100000) is set. A set high bit indicates more characters follow for this delta value
 
         int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
         lat += dlat;
@@ -553,7 +553,7 @@ class MapViewScreenState extends State<MapViewScreen> {
         int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
         lng += dlng;
 
-        // Convert to actual coordinates
+        // divide by 100,000 to get actual coordinates
         double latitude = lat / 1E5;
         double longitude = lng / 1E5;
         points.add(LatLng(latitude, longitude));

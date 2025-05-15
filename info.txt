@@ -10,7 +10,7 @@ Cloudinary - Image storage
 Key Features:
 
 Implemented Dijkstra's shortest path algorithm for finding optimal route for vehicle.
-Balanced resource usage using optimal time intervals (30 sec) and minimum distance (30 meters) for location updates.
+Balanced resource usage using optimal time intervals (30 sec) and minimum distance (100 meters) for location updates.
 Node.js API for listening to updates in firebase and sending notifications to respective users.
 
 

@@ -462,7 +462,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
       debugPrint('Error refreshing vehicle data: $e');
       if (!_isDisposed && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error refreshing vehicle data: $e')),
+          SnackBar(content: Text('Error refreshing vehicle data')),
         );
       }
     }
@@ -539,7 +539,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> with Wi
   }
 
   void _switchToBackgroundMode() async {
-    if (_isDisposed) return;
 
     try {
       if (_isTrackingActive && !_isInBackgroundMode) {
